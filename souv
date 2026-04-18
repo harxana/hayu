@@ -1,0 +1,533 @@
+-- ================================================
+-- HAYU Store | 4 Souvenir Toggle
+-- ================================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local souvenirs = {
+    {name = "Souvenir Gold",  slot = 1, aktif = true, durasi = 0, warna = Color3.fromRGB(255, 200, 0),   icon = "🥇"},
+    {name = "Souvenir Speed", slot = 2, aktif = true, durasi = 0, warna = Color3.fromRGB(80, 180, 255),  icon = "⚡"},
+    {name = "Souvenir Luck",  slot = 3, aktif = true, durasi = 0, warna = Color3.fromRGB(160, 80, 255),  icon = "🍀"},
+    {name = "Souvenir Wins",  slot = 4, aktif = true, durasi = 0, warna = Color3.fromRGB(80, 220, 120),  icon = "🏆"},
+}
+
+local isRunning = false
+
+local function fireSouvenir(slot)
+    local args = {"EquipBestSouvenir", slot}
+    game:GetService("ReplicatedStorage"):WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+end
+
+-- ================================================
+-- GUI
+-- ================================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HayuStoreGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.DisplayOrder = 999
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ================================================
+-- TOMBOL HY (show saat hide)
+-- ================================================
+local ShowButton = Instance.new("TextButton")
+ShowButton.Size = UDim2.new(0, 52, 0, 52)
+ShowButton.Position = UDim2.new(0, 20, 0.5, -26)
+ShowButton.BackgroundColor3 = Color3.fromRGB(20, 20, 32)
+ShowButton.Text = ""
+ShowButton.BorderSizePixel = 0
+ShowButton.Visible = false
+ShowButton.ZIndex = 999
+ShowButton.Active = true
+ShowButton.Draggable = true
+ShowButton.Parent = ScreenGui
+Instance.new("UICorner", ShowButton).CornerRadius = UDim.new(0, 14)
+
+local ShowStroke = Instance.new("UIStroke")
+ShowStroke.Color = Color3.fromRGB(255, 190, 0)
+ShowStroke.Thickness = 2.5
+ShowStroke.Parent = ShowButton
+
+local ShowGrad = Instance.new("UIGradient")
+ShowGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 30, 10)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 28))
+})
+ShowGrad.Rotation = 135
+ShowGrad.Parent = ShowButton
+
+local HYLabel = Instance.new("TextLabel")
+HYLabel.Size = UDim2.new(1, 0, 0.58, 0)
+HYLabel.Position = UDim2.new(0, 0, 0.05, 0)
+HYLabel.BackgroundTransparency = 1
+HYLabel.Text = "HY"
+HYLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+HYLabel.TextSize = 18
+HYLabel.Font = Enum.Font.GothamBold
+HYLabel.ZIndex = 1000
+HYLabel.Parent = ShowButton
+
+local HYLine = Instance.new("Frame")
+HYLine.Size = UDim2.new(0.7, 0, 0, 2)
+HYLine.Position = UDim2.new(0.15, 0, 0.62, 0)
+HYLine.BackgroundColor3 = Color3.fromRGB(255, 190, 0)
+HYLine.BorderSizePixel = 0
+HYLine.ZIndex = 1000
+HYLine.Parent = ShowButton
+Instance.new("UICorner", HYLine).CornerRadius = UDim.new(1, 0)
+
+local HYSub = Instance.new("TextLabel")
+HYSub.Size = UDim2.new(1, 0, 0.33, 0)
+HYSub.Position = UDim2.new(0, 0, 0.67, 0)
+HYSub.BackgroundTransparency = 1
+HYSub.Text = "STORE"
+HYSub.TextColor3 = Color3.fromRGB(255, 160, 0)
+HYSub.TextSize = 8
+HYSub.Font = Enum.Font.GothamBold
+HYSub.ZIndex = 1000
+HYSub.Parent = ShowButton
+
+-- ================================================
+-- FRAME UTAMA
+-- ================================================
+local frameHeight = 390
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 260, 0, frameHeight)
+Frame.Position = UDim2.new(0, 20, 0.5, -frameHeight/2)
+Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+Frame.ZIndex = 100
+Frame.Parent = ScreenGui
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 14)
+
+local FrameGrad = Instance.new("UIGradient")
+FrameGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 20, 35)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 12, 20))
+})
+FrameGrad.Rotation = 135
+FrameGrad.Parent = Frame
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(255, 175, 0)
+Stroke.Thickness = 2
+Stroke.Parent = Frame
+
+local Shadow = Instance.new("ImageLabel")
+Shadow.Size = UDim2.new(1, 40, 1, 40)
+Shadow.Position = UDim2.new(0, -20, 0, -20)
+Shadow.BackgroundTransparency = 1
+Shadow.Image = "rbxassetid://5028857084"
+Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.ImageTransparency = 0.55
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(24, 24, 276, 276)
+Shadow.ZIndex = 99
+Shadow.Parent = Frame
+
+-- ================================================
+-- TITLE BAR
+-- ================================================
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 46)
+TitleBar.BackgroundColor3 = Color3.fromRGB(200, 120, 0)
+TitleBar.BorderSizePixel = 0
+TitleBar.ZIndex = 101
+TitleBar.Parent = Frame
+Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 14)
+
+local TitleFix = Instance.new("Frame")
+TitleFix.Size = UDim2.new(1, 0, 0.5, 0)
+TitleFix.Position = UDim2.new(0, 0, 0.5, 0)
+TitleFix.BackgroundColor3 = Color3.fromRGB(200, 120, 0)
+TitleFix.BorderSizePixel = 0
+TitleFix.ZIndex = 101
+TitleFix.Parent = TitleBar
+
+local TitleGrad = Instance.new("UIGradient")
+TitleGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 175, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(210, 100, 0))
+})
+TitleGrad.Rotation = 90
+TitleGrad.Parent = TitleBar
+
+-- 🔥 Logo (ganti API)
+local FireBox = Instance.new("Frame")
+FireBox.Size = UDim2.new(0, 36, 0, 32)
+FireBox.Position = UDim2.new(0, 8, 0.5, -16)
+FireBox.BackgroundColor3 = Color3.fromRGB(20, 12, 5)
+FireBox.BorderSizePixel = 0
+FireBox.ZIndex = 103
+FireBox.Parent = TitleBar
+Instance.new("UICorner", FireBox).CornerRadius = UDim.new(0, 7)
+
+local FireBoxStroke = Instance.new("UIStroke")
+FireBoxStroke.Color = Color3.fromRGB(255, 120, 0)
+FireBoxStroke.Thickness = 1.5
+FireBoxStroke.Parent = FireBox
+
+local FireEmoji = Instance.new("TextLabel")
+FireEmoji.Size = UDim2.new(1, 0, 1, 0)
+FireEmoji.BackgroundTransparency = 1
+FireEmoji.Text = "🔥"
+FireEmoji.TextSize = 18
+FireEmoji.Font = Enum.Font.GothamBold
+FireEmoji.ZIndex = 104
+FireEmoji.Parent = FireBox
+
+-- Title teks
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -120, 1, 0)
+TitleLabel.Position = UDim2.new(0, 52, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "HAYU Store"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 15
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.ZIndex = 102
+TitleLabel.Parent = TitleBar
+
+-- Tombol HIDE
+local HideBtn = Instance.new("TextButton")
+HideBtn.Size = UDim2.new(0, 30, 0, 26)
+HideBtn.Position = UDim2.new(1, -68, 0.5, -13)
+HideBtn.BackgroundColor3 = Color3.fromRGB(255, 210, 60)
+HideBtn.Text = "−"
+HideBtn.TextColor3 = Color3.fromRGB(80, 40, 0)
+HideBtn.TextSize = 20
+HideBtn.Font = Enum.Font.GothamBold
+HideBtn.BorderSizePixel = 0
+HideBtn.ZIndex = 103
+HideBtn.Parent = TitleBar
+Instance.new("UICorner", HideBtn).CornerRadius = UDim.new(0, 6)
+
+-- Tombol CLOSE
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 26)
+CloseBtn.Position = UDim2.new(1, -34, 0.5, -13)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.BorderSizePixel = 0
+CloseBtn.ZIndex = 103
+CloseBtn.Parent = TitleBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+
+-- ================================================
+-- HELPER
+-- ================================================
+local function makeLabel(text, posY, size, color, bold)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, -20, 0, size or 20)
+    lbl.Position = UDim2.new(0, 10, 0, posY)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = color or Color3.fromRGB(200, 200, 255)
+    lbl.TextSize = 12
+    lbl.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.ZIndex = 101
+    lbl.Parent = Frame
+    return lbl
+end
+
+local function makeDivider(posY)
+    local d = Instance.new("Frame")
+    d.Size = UDim2.new(1, -20, 0, 1)
+    d.Position = UDim2.new(0, 10, 0, posY)
+    d.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+    d.BackgroundTransparency = 0.5
+    d.BorderSizePixel = 0
+    d.ZIndex = 101
+    d.Parent = Frame
+end
+
+-- ================================================
+-- STATUS
+-- ================================================
+makeLabel("Auto Toggle Souvenir", 51, 15, Color3.fromRGB(255, 175, 0), true).TextSize = 11
+local StatusLabel  = makeLabel("Status: MATI", 69, 22, Color3.fromRGB(255, 80, 80), true)
+StatusLabel.TextSize = 13
+local RunningLabel = makeLabel("Script: -", 91, 18, Color3.fromRGB(200, 200, 255), false)
+RunningLabel.TextSize = 11
+
+makeDivider(113)
+
+-- ================================================
+-- KARTU SOUVENIR
+-- ================================================
+local cardRefs = {}
+local startY = 120
+local cardH  = 56
+local cardGap = 8
+
+for i, sv in ipairs(souvenirs) do
+    local posY = startY + (i - 1) * (cardH + cardGap)
+
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, -20, 0, cardH)
+    Card.Position = UDim2.new(0, 10, 0, posY)
+    Card.BackgroundColor3 = Color3.fromRGB(25, 22, 38)
+    Card.BorderSizePixel = 0
+    Card.ZIndex = 101
+    Card.Parent = Frame
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 10)
+
+    local CardStroke = Instance.new("UIStroke")
+    CardStroke.Color = sv.warna
+    CardStroke.Thickness = 1.5
+    CardStroke.Transparency = 0.5
+    CardStroke.Parent = Card
+
+    local IconLbl = Instance.new("TextLabel")
+    IconLbl.Size = UDim2.new(0, 30, 0, 30)
+    IconLbl.Position = UDim2.new(0, 8, 0.5, -15)
+    IconLbl.BackgroundTransparency = 1
+    IconLbl.Text = sv.icon
+    IconLbl.TextSize = 18
+    IconLbl.Font = Enum.Font.GothamBold
+    IconLbl.ZIndex = 102
+    IconLbl.Parent = Card
+
+    local NameLbl = Instance.new("TextLabel")
+    NameLbl.Size = UDim2.new(0, 100, 0, 18)
+    NameLbl.Position = UDim2.new(0, 44, 0, 8)
+    NameLbl.BackgroundTransparency = 1
+    NameLbl.Text = sv.name
+    NameLbl.TextColor3 = sv.warna
+    NameLbl.TextSize = 11
+    NameLbl.Font = Enum.Font.GothamBold
+    NameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    NameLbl.ZIndex = 102
+    NameLbl.Parent = Card
+
+    local TimerDisp = Instance.new("TextLabel")
+    TimerDisp.Size = UDim2.new(0, 120, 0, 16)
+    TimerDisp.Position = UDim2.new(0, 44, 0, 30)
+    TimerDisp.BackgroundTransparency = 1
+    TimerDisp.Text = "Durasi: 0 dtk | Sisa: -"
+    TimerDisp.TextColor3 = Color3.fromRGB(190, 190, 190)
+    TimerDisp.TextSize = 9
+    TimerDisp.Font = Enum.Font.Gotham
+    TimerDisp.TextXAlignment = Enum.TextXAlignment.Left
+    TimerDisp.ZIndex = 102
+    TimerDisp.Parent = Card
+
+    -- Toggle aktif per kartu
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Size = UDim2.new(0, 24, 0, 24)
+    ToggleBtn.Position = UDim2.new(1, -120, 0.5, -12)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 145, 70)
+    ToggleBtn.Text = "✔"
+    ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleBtn.TextSize = 12
+    ToggleBtn.Font = Enum.Font.GothamBold
+    ToggleBtn.BorderSizePixel = 0
+    ToggleBtn.ZIndex = 103
+    ToggleBtn.Parent = Card
+    Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 5)
+
+    -- Tombol −
+    local BtnMin = Instance.new("TextButton")
+    BtnMin.Size = UDim2.new(0, 24, 0, 24)
+    BtnMin.Position = UDim2.new(1, -90, 0.5, -12)
+    BtnMin.BackgroundColor3 = Color3.fromRGB(160, 45, 45)
+    BtnMin.Text = "−"
+    BtnMin.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnMin.TextSize = 15
+    BtnMin.Font = Enum.Font.GothamBold
+    BtnMin.BorderSizePixel = 0
+    BtnMin.ZIndex = 103
+    BtnMin.Parent = Card
+    Instance.new("UICorner", BtnMin).CornerRadius = UDim.new(0, 5)
+
+    -- Display durasi
+    local DurDisp = Instance.new("TextLabel")
+    DurDisp.Size = UDim2.new(0, 28, 0, 24)
+    DurDisp.Position = UDim2.new(1, -64, 0.5, -12)
+    DurDisp.BackgroundColor3 = Color3.fromRGB(18, 18, 30)
+    DurDisp.Text = "0"
+    DurDisp.TextColor3 = Color3.fromRGB(255, 225, 80)
+    DurDisp.TextSize = 12
+    DurDisp.Font = Enum.Font.GothamBold
+    DurDisp.BorderSizePixel = 0
+    DurDisp.ZIndex = 103
+    DurDisp.Parent = Card
+    Instance.new("UICorner", DurDisp).CornerRadius = UDim.new(0, 5)
+
+    -- Tombol +
+    local BtnPlus = Instance.new("TextButton")
+    BtnPlus.Size = UDim2.new(0, 24, 0, 24)
+    BtnPlus.Position = UDim2.new(1, -34, 0.5, -12)
+    BtnPlus.BackgroundColor3 = Color3.fromRGB(35, 145, 70)
+    BtnPlus.Text = "+"
+    BtnPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnPlus.TextSize = 15
+    BtnPlus.Font = Enum.Font.GothamBold
+    BtnPlus.BorderSizePixel = 0
+    BtnPlus.ZIndex = 103
+    BtnPlus.Parent = Card
+    Instance.new("UICorner", BtnPlus).CornerRadius = UDim.new(0, 5)
+
+    cardRefs[i] = {
+        card = Card,
+        cardStroke = CardStroke,
+        timerDisp = TimerDisp,
+        durDisp = DurDisp,
+        toggleBtn = ToggleBtn,
+    }
+
+    BtnMin.MouseButton1Click:Connect(function()
+        if souvenirs[i].durasi > 0 then
+            souvenirs[i].durasi -= 1
+            DurDisp.Text = tostring(souvenirs[i].durasi)
+        end
+    end)
+
+    BtnPlus.MouseButton1Click:Connect(function()
+        souvenirs[i].durasi += 1
+        DurDisp.Text = tostring(souvenirs[i].durasi)
+    end)
+
+    ToggleBtn.MouseButton1Click:Connect(function()
+        souvenirs[i].aktif = not souvenirs[i].aktif
+        if souvenirs[i].aktif then
+            ToggleBtn.Text = "✔"
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 145, 70)
+            CardStroke.Transparency = 0.5
+            Card.BackgroundColor3 = Color3.fromRGB(25, 22, 38)
+        else
+            ToggleBtn.Text = "✖"
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(160, 45, 45)
+            CardStroke.Transparency = 0.85
+            Card.BackgroundColor3 = Color3.fromRGB(20, 18, 28)
+        end
+    end)
+end
+
+-- ================================================
+-- DIVIDER & TOMBOL UTAMA
+-- ================================================
+local bottomY = startY + #souvenirs * (cardH + cardGap) + 4
+makeDivider(bottomY)
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(1, -20, 0, 40)
+ToggleButton.Position = UDim2.new(0, 10, 0, bottomY + 8)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 170, 90)
+ToggleButton.Text = "▶  NYALAKAN"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 14
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.BorderSizePixel = 0
+ToggleButton.ZIndex = 101
+ToggleButton.Parent = Frame
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 10)
+
+local BtnGrad = Instance.new("UIGradient")
+BtnGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 200, 110)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 140, 70))
+})
+BtnGrad.Rotation = 90
+BtnGrad.Parent = ToggleButton
+
+-- ================================================
+-- UPDATE GUI
+-- ================================================
+local function setON()
+    StatusLabel.Text = "Status: AKTIF ✅"
+    StatusLabel.TextColor3 = Color3.fromRGB(80, 255, 120)
+    ToggleButton.Text = "⏹  MATIKAN"
+    BtnGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 70, 70)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 40, 40))
+    })
+end
+
+local function setOFF()
+    StatusLabel.Text = "Status: MATI"
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    ToggleButton.Text = "▶  NYALAKAN"
+    BtnGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 200, 110)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 140, 70))
+    })
+    RunningLabel.Text = "Script: -"
+    for i, ref in ipairs(cardRefs) do
+        ref.timerDisp.Text = "Durasi: " .. souvenirs[i].durasi .. " dtk | Sisa: -"
+    end
+end
+
+-- ================================================
+-- ENGINE LOOP
+-- ================================================
+local function runLoop()
+    while isRunning do
+        local adaAktif = false
+        for _, sv in ipairs(souvenirs) do
+            if sv.aktif then adaAktif = true break end
+        end
+        if not adaAktif then task.wait(0.5) continue end
+
+        for i, sv in ipairs(souvenirs) do
+            if not isRunning then break end
+            if not sv.aktif then continue end
+
+            local dur = sv.durasi
+            RunningLabel.Text = "Script: " .. sv.name
+
+            if dur == 0 then
+                fireSouvenir(sv.slot)
+                cardRefs[i].timerDisp.Text = "Durasi: 0 dtk | Fire!"
+                task.wait(0.5)
+                cardRefs[i].timerDisp.Text = "Durasi: 0 dtk | Sisa: -"
+            else
+                for t = dur, 1, -1 do
+                    if not isRunning or not sv.aktif then break end
+                    fireSouvenir(sv.slot)
+                    cardRefs[i].timerDisp.Text = "Durasi: " .. dur .. " dtk | Sisa: " .. t .. " dtk"
+                    task.wait(1)
+                end
+                cardRefs[i].timerDisp.Text = "Durasi: " .. dur .. " dtk | Sisa: -"
+            end
+        end
+    end
+    setOFF()
+end
+
+-- ================================================
+-- EVENTS
+-- ================================================
+ToggleButton.MouseButton1Click:Connect(function()
+    isRunning = not isRunning
+    if isRunning then
+        setON()
+        task.spawn(runLoop)
+    end
+end)
+
+HideBtn.MouseButton1Click:Connect(function()
+    Frame.Visible = false
+    ShowButton.Visible = true
+end)
+
+ShowButton.MouseButton1Click:Connect(function()
+    Frame.Visible = true
+    ShowButton.Visible = false
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    isRunning = false
+    task.wait(0.1)
+    ScreenGui:Destroy()
+end)
