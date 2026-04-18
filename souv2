@@ -635,7 +635,7 @@ _hics.Color=Color3.fromRGB(180,100,255); _hics.Thickness=1.2; _hics.Transparency
 
 local HatchEggLbl=Instance.new("TextLabel",HatchInfoCard)
 HatchEggLbl.Size=UDim2.new(0.6,0,0,20); HatchEggLbl.Position=UDim2.new(0,10,0,8)
-HatchEggLbl.BackgroundTransparency=1; HatchEggLbl.Text="🥚  Egg ID: 7000105"
+HatchEggLbl.BackgroundTransparency=1; HatchEggLbl.Text="🥚  Egg"
 HatchEggLbl.TextColor3=Color3.fromRGB(200,150,255); HatchEggLbl.TextSize=11
 HatchEggLbl.Font=Enum.Font.GothamBold; HatchEggLbl.TextXAlignment=Enum.TextXAlignment.Left; HatchEggLbl.ZIndex=102
 
