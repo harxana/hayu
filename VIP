@@ -806,7 +806,7 @@ local _clGrad        = clBar.grad
 local claimActive    = {}
 local claimStatus    = {}
 
-makeSectionHeader(PanelClaim, "Online Awards (1–12)", "🎁", 1)
+makeSectionHeader(PanelClaim, "Auto Claim Free Gift", "🎁", 1)
 
 for n = 1, 12 do
     claimActive[n] = true
