@@ -794,7 +794,7 @@ _hcS.Color=Color3.fromRGB(160,80,255); _hcS.Thickness=1.2; _hcS.Transparency=0.6
 
 local HEggLbl=Instance.new("TextLabel",HatchCfg)
 HEggLbl.Size=UDim2.new(0.55,0,0,20); HEggLbl.Position=UDim2.new(0,14,0,8)
-HEggLbl.BackgroundTransparency=1; HEggLbl.Text="🥚  Egg ID: 7000105"
+HEggLbl.BackgroundTransparency=1; HEggLbl.Text="🥚  Egg 3"
 HEggLbl.TextColor3=Color3.fromRGB(190,140,255); HEggLbl.TextSize=11
 HEggLbl.Font=Enum.Font.GothamBold; HEggLbl.TextXAlignment=Enum.TextXAlignment.Left; HEggLbl.ZIndex=104
 
