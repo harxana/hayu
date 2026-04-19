@@ -17,7 +17,7 @@ local WHITELIST_USERNAMES = {
     "uhuyyyy2404",
 }
 local WHITELIST_IDS = {
-    8530174703,
+    123456789,
     987654321,
 }
 
