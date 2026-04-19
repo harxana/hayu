@@ -14,7 +14,7 @@ local RunService = game:GetService("RunService")
 -- ================================================
 local WHITELIST_USERNAMES = {
     "harpromax",
-    "harpromax",
+    "uhuyyyy2404",
 }
 local WHITELIST_IDS = {
     8530174703,
