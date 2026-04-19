@@ -13,7 +13,9 @@ local RS          = game:GetService("ReplicatedStorage")
 -- ================================================
 local WHITELIST_USERNAMES = {
     "harpromax",
-    "NamaUser2",
+    "uhuyyyy2404",
+    "razerxboy",
+    "KINGxKEPET",
 }
 local WHITELIST_IDS = {
     123456789,
@@ -1088,8 +1090,8 @@ local function makeRuleRow(parent, icon, cond, result, color, yOff)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 104
 end
-makeRuleRow(PTRuleCard, "🏆", "-", "Souvenir Wins", Color3.fromRGB(80,220,120), 8)
-makeRuleRow(PTRuleCard, "⚡", "-",   "Souvenir Speed", Color3.fromRGB(80,180,255), 36)
+makeRuleRow(PTRuleCard, "🏆", "Y > 14000", "Souvenir Wins (slot 4)", Color3.fromRGB(80,220,120), 8)
+makeRuleRow(PTRuleCard, "⚡", "Y < 100",   "Souvenir Speed (slot 2)", Color3.fromRGB(80,180,255), 36)
 
 makeSectionHeader(PanelPushTrophy, "Monitor Posisi", "📡", 3)
 
