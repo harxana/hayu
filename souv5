@@ -995,8 +995,8 @@ local function makeRuleRow(parent, icon, cond, result, color, yOff)
     lbl.TextColor3=color; lbl.TextSize=9; lbl.Font=Enum.Font.GothamBold
     lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.ZIndex=104
 end
-makeRuleRow(PTRuleCard,"🏆","Y > 14000","Equip Souvenir Wins (slot 4)",Color3.fromRGB(80,220,120),8)
-makeRuleRow(PTRuleCard,"⚡","Y < 100","Equip Souvenir Speed (slot 2)",Color3.fromRGB(80,180,255),36)
+makeRuleRow(PTRuleCard,"🏆","Y > 14000","Equip Souvenir Wins",Color3.fromRGB(80,220,120),8)
+makeRuleRow(PTRuleCard,"⚡","Y < 100","Equip Souvenir Speed",Color3.fromRGB(80,180,255),36)
 
 makeSectionHeader(PanelPushTrophy,"Monitor Posisi","📡",3)
 
