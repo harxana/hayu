@@ -14,7 +14,7 @@
 -- 10. Low Performance mode
 -- 11. Drag dari seluruh body GUI (bukan hanya titlebar)
 -- 12. Resize 8 arah (N/S/W/E/NW/NE/SW/SE) — tarik tepi/sudut GUI
--- 13. [BARU] Auto Pet WINS & Pet SPEED sesuai Souvenir aktif
+-- 13. [NEW] Auto Pet Switch: Pet WINS <-> Pet SPEED sesuai Souvenir aktif
 -- ================================================
 
 local Players      = game:GetService("Players")
@@ -275,38 +275,6 @@ local superClimbAktif = false
 local spinDailyAktif  = false
 
 -- ================================================
--- PET IDs
--- ================================================
-local PET_WINS_IDS  = {7031, 12407, 12538, 12669, 12387, 9074, 12339, 15146}
-local PET_SPEED_IDS = {8930, 33418, 8737, 11091, 63565, 7487, 56843, 26526}
-
--- ================================================
--- PET REMOTE FUNCTION
--- ================================================
-local function downPet(petId)
-    pcall(function()
-        local args = { "DownPet", petId }
-        RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-    end)
-end
-
--- Lepas semua pet dari list (unequip)
-local function lepasAllPets(idList)
-    for _, id in ipairs(idList) do
-        downPet(id)
-        safeWait(0.05)
-    end
-end
-
--- Pasang semua pet dari list (equip)
-local function pasangAllPets(idList)
-    for _, id in ipairs(idList) do
-        downPet(id)
-        safeWait(0.05)
-    end
-end
-
--- ================================================
 -- REMOTE FUNCTIONS
 -- ================================================
 local function fireOnlineAward(index)
@@ -323,6 +291,34 @@ local function fireSouvenirWins()
 end
 local function fireSouvenirLuck()
     RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("EquipBestSouvenir", 3)
+end
+
+-- ================================================
+-- [NEW] PET IDs
+-- ================================================
+local PET_WINS_IDS  = {7031, 12407, 12538, 12669, 12387, 9074, 12339, 15146}
+local PET_SPEED_IDS = {8930, 33418, 8737, 11091, 63565, 7487, 56843, 26526}
+
+-- Fungsi DownPet (PASANG = equip pet / tidak mau pakai pet tsb)
+local function downPet(petId)
+    local args = { "DownPet", petId }
+    RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+end
+
+-- Lepas semua pet dari list tertentu (kecepatan maksimal, jeda minimal)
+local function lepasListPet(idList)
+    for _, petId in ipairs(idList) do
+        pcall(function() downPet(petId) end)
+        safeWait(0.05)
+    end
+end
+
+-- Pasang semua pet dari list tertentu (kecepatan maksimal, jeda minimal)
+local function pasangListPet(idList)
+    for _, petId in ipairs(idList) do
+        pcall(function() downPet(petId) end)
+        safeWait(0.05)
+    end
 end
 
 -- ================================================
@@ -526,7 +522,7 @@ do
 end
 
 -- ================================================
--- RESIZE SYSTEM — 8 handle
+-- RESIZE SYSTEM
 -- ================================================
 do
     local MIN_W, MIN_H = 280, 340
@@ -620,14 +616,20 @@ do
 
         if resizeDir == 1 or resizeDir == 5 or resizeDir == 9 then
             local candidate = osh - dy
-            if candidate >= MIN_H then newH = candidate; newY = opy + dy end
+            if candidate >= MIN_H then
+                newH = candidate
+                newY = opy + dy
+            end
         end
         if resizeDir == 2 or resizeDir == 6 or resizeDir == 10 then
             newH = math.max(osh + dy, MIN_H)
         end
         if resizeDir == 4 or resizeDir == 5 or resizeDir == 6 then
             local candidate = osw - dx
-            if candidate >= MIN_W then newW = candidate; newX = opx + dx end
+            if candidate >= MIN_W then
+                newW = candidate
+                newX = opx + dx
+            end
         end
         if resizeDir == 8 or resizeDir == 9 or resizeDir == 10 then
             newW = math.max(osw + dx, MIN_W)
@@ -1113,7 +1115,7 @@ local PanelPushTrophy = makePanel()
 
 local CFG = {
     wins  = { value = 12700, mode = "above" },
-    speed = { value = 12700,   mode = "below" },
+    speed = { value = 12700, mode = "below" },
 }
 
 local TROPHY_STATE = {
@@ -1173,65 +1175,36 @@ local function showToast(msg, icon, col)
 end
 
 -- ══════════════════════════════════════════════
--- [BARU] FUNGSI SWAP PET OTOMATIS
--- Dipanggil setiap kali mode Trophy berubah
+-- [NEW] AUTO PET SWITCH
+-- Saat WINS aktif  → LEPAS Pet SPEED + PASANG Pet WINS
+-- Saat SPEED aktif → LEPAS Pet WINS  + PASANG Pet SPEED
 -- ══════════════════════════════════════════════
-local lastPetMode = "IDLE"
+local lastPetMode = "NONE"   -- "NONE" | "WINS" | "SPEED"
 
-local function swapPetForMode(mode)
-    -- Hanya jalankan jika mode benar-benar berubah
-    if mode == lastPetMode then return end
-    lastPetMode = mode
+local function switchPetToWins()
+    if lastPetMode == "WINS" then return end
+    lastPetMode = "WINS"
+    task.spawn(function()
+        -- 1. LEPAS semua pet SPEED (DownPet = pasang/lepas toggle, saat ini SPEED sedang aktif → DownPet untuk melepas)
+        lepasListPet(PET_SPEED_IDS)
+        -- 2. PASANG semua pet WINS (aktifkan pet WINS)
+        pasangListPet(PET_WINS_IDS)
+        -- Notif
+        showToast("🏆 Pet WINS Aktif!", "🏆", Color3.fromRGB(255,215,0))
+    end)
+end
 
-    if mode == "SPEED" then
-        -- Souvenir SPEED aktif:
-        -- 1. Lepas Pet WINS (DownPet tiap ID Pet WINS)
-        -- 2. Pasang Pet SPEED (DownPet tiap ID Pet SPEED)
-        task.spawn(function()
-            -- Lepas Pet WINS
-            for _, id in ipairs(PET_WINS_IDS) do
-                pcall(function()
-                    RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("DownPet", id)
-                end)
-                safeWait(0.05)
-            end
-            -- Pasang Pet SPEED
-            for _, id in ipairs(PET_SPEED_IDS) do
-                pcall(function()
-                    RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("DownPet", id)
-                end)
-                safeWait(0.05)
-            end
-        end)
-        -- Notif barengan dengan Souvenir SPEED aktif
-        showToast("🐾 Pet SPEED Aktif!", "⚡", Color3.fromRGB(80,180,255))
-
-    elseif mode == "WINS" then
-        -- Souvenir WINS aktif:
-        -- 1. Lepas Pet SPEED (DownPet tiap ID Pet SPEED)
-        -- 2. Pasang Pet WINS (DownPet tiap ID Pet WINS)
-        task.spawn(function()
-            -- Lepas Pet SPEED
-            for _, id in ipairs(PET_SPEED_IDS) do
-                pcall(function()
-                    RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("DownPet", id)
-                end)
-                safeWait(0.05)
-            end
-            -- Pasang Pet WINS
-            for _, id in ipairs(PET_WINS_IDS) do
-                pcall(function()
-                    RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("DownPet", id)
-                end)
-                safeWait(0.05)
-            end
-        end)
-        -- Notif barengan dengan Souvenir WINS aktif
-        showToast("🐾 Pet WINS Aktif!", "🏆", Color3.fromRGB(255,215,0))
-
-    else
-        -- IDLE: reset tracker saja, tidak swap pet
-    end
+local function switchPetToSpeed()
+    if lastPetMode == "SPEED" then return end
+    lastPetMode = "SPEED"
+    task.spawn(function()
+        -- 1. LEPAS semua pet WINS
+        lepasListPet(PET_WINS_IDS)
+        -- 2. PASANG semua pet SPEED
+        pasangListPet(PET_SPEED_IDS)
+        -- Notif
+        showToast("⚡ Pet SPEED Aktif!", "⚡", Color3.fromRGB(80,180,255))
+    end)
 end
 
 -- ══════════════════════════════════════════════
@@ -1509,7 +1482,7 @@ ResetBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════════
--- LOGIC TROPHY: MODE SWITCH + SWAP PET OTOMATIS
+-- LOGIC TROPHY: MODE SWITCH + [NEW] AUTO PET SWITCH
 -- ══════════════════════════════════════════════
 local function applyMode(mode, h)
     if mode == TROPHY_STATE.currentMode then return end
@@ -1526,9 +1499,9 @@ local function applyMode(mode, h)
         TrophyRunLbl.TextColor3=Color3.fromRGB(255,215,0)
         hBarFill.BackgroundColor3=Color3.fromRGB(255,215,0)
         WinsCS.Transparency=0.08; SpeedCS.Transparency=0.82
-        showToast("🏆 WINS Aktif!  Total: "..TROPHY_STATE.winsCount.."x","🏆",Color3.fromRGB(255,215,0))
-        -- [BARU] Swap pet ke WINS
-        swapPetForMode("WINS")
+        showToast("🏆 Souvenir WINS Aktif!  Total: "..TROPHY_STATE.winsCount.."x","🏆",Color3.fromRGB(255,215,0))
+        -- [NEW] Switch pet ke WINS
+        switchPetToWins()
 
     elseif mode == "SPEED" then
         pcall(fireSouvenirSpeed)
@@ -1539,22 +1512,20 @@ local function applyMode(mode, h)
         TrophyRunLbl.TextColor3=Color3.fromRGB(80,200,255)
         hBarFill.BackgroundColor3=Color3.fromRGB(80,180,255)
         SpeedCS.Transparency=0.08; WinsCS.Transparency=0.82
-        showToast("⚡ SPEED Aktif!","⚡",Color3.fromRGB(80,180,255))
-        -- [BARU] Swap pet ke SPEED
-        swapPetForMode("SPEED")
+        showToast("⚡ Souvenir SPEED Aktif!","⚡",Color3.fromRGB(80,180,255))
+        -- [NEW] Switch pet ke SPEED
+        switchPetToSpeed()
     else
         HeightZoneLbl.Text="〰 NORMAL"; HeightZoneLbl.TextColor3=Color3.fromRGB(130,125,170)
         ModeIconLbl.Text="〰"
         TrophyRunLbl.Text="Memantau ketinggian..."; TrophyRunLbl.TextColor3=Color3.fromRGB(100,96,136)
         WinsCS.Transparency=0.5; SpeedCS.Transparency=0.5
-        -- [BARU] Reset pet tracker saat idle
-        swapPetForMode("IDLE")
     end
 end
 
 local function startTrophyLoop()
     TROPHY_STATE.running=true; TROPHY_STATE.currentMode="IDLE"
-    lastPetMode = "IDLE"  -- reset pet tracker saat mulai
+    lastPetMode = "NONE"  -- reset pet mode saat trophy dimulai
     TrophyStatusLbl.Text="● AKTIF"; TrophyStatusLbl.TextColor3=Color3.fromRGB(80,255,130)
     TrophyTogBtn.Text="■ MATIKAN"
     togGrad.Color=ColorSequence.new({
@@ -1585,7 +1556,7 @@ local function stopTrophyLoop()
     TROPHY_STATE.running=false
     if TROPHY_STATE.loop then task.cancel(TROPHY_STATE.loop); TROPHY_STATE.loop=nil end
     TROPHY_STATE.currentMode="IDLE"
-    lastPetMode = "IDLE"
+    lastPetMode = "NONE"
     TrophyStatusLbl.Text="● MATI"; TrophyStatusLbl.TextColor3=Color3.fromRGB(255,80,80)
     TrophyTogBtn.Text="▶ AKTIFKAN"
     togGrad.Color=ColorSequence.new({
