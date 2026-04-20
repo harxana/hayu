@@ -1198,12 +1198,11 @@ local function runClaimLoop()
                 local args = { "GetOnlineAward", n }
                 RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer(table.unpack(args))
             end)
-            smartDelay(0.5)  -- jeda antar klaim
+            smartDelay(3)  -- jeda antar klaim
         end
         if not saClaimAktif then break end
-        -- Jeda 5 menit (300 detik) sebelum claim berikutnya
-        showToast("✅ Semua hadiah diklaim! Tunggu 5 menit...", "🎁", Color3.fromRGB(80,220,130))
-        smartDelay(300)
+        --
+        smartDelay(100)
     end
 end
 
