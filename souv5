@@ -182,7 +182,6 @@ local function showNotif(success)
         })
     end
 
-    -- Animasi masuk
     TweenService:Create(overlay, TweenInfo.new(0.3), {BackgroundTransparency=0.72}):Play()
     TweenService:Create(card, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
         Position = UDim2.new(0.5,-160,0.3,-80),
@@ -206,7 +205,6 @@ local function showNotif(success)
         end
     end)
 
-    -- Animasi keluar
     task.delay(3.2, function()
         TweenService:Create(card, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Position = UDim2.new(0.5,-160,0.15,-80),
@@ -241,12 +239,17 @@ local souvenirs = {
 -- ================================================
 -- STATE
 -- ================================================
+local claimAktif      = false
 local hatchAktif      = false
 local pushTrophyAktif = false
 local activeTab       = "souvenir"
 local claimDelay      = 5
 local hatchDelay      = 1
 local hatchCount      = 10
+
+-- Super Auto states
+local superClimbAktif  = false
+local spinDailyAktif   = false
 
 -- ================================================
 -- REMOTE FUNCTIONS
@@ -545,10 +548,11 @@ local function makeSideTab(icon, label, yOff, accent)
 end
 
 local sY = 8
-local SvTab = makeSideTab("🥇","Souvenir", sY, Color3.fromRGB(255,190,0));  sY += 70
-local ClTab = makeSideTab("🎁","Super Auto",sY, Color3.fromRGB(80,180,255)); sY += 70
-local HtTab = makeSideTab("🥚","Hatch",    sY, Color3.fromRGB(160,80,255)); sY += 70
-local PtTab = makeSideTab("🏆","Trophy",   sY, Color3.fromRGB(255,215,0))
+local SvTab = makeSideTab("🥇","Souvenir",   sY, Color3.fromRGB(255,190,0));  sY += 70
+local ClTab = makeSideTab("🎁","Claim",       sY, Color3.fromRGB(80,180,255)); sY += 70
+local HtTab = makeSideTab("🥚","Hatch",       sY, Color3.fromRGB(160,80,255)); sY += 70
+local PtTab = makeSideTab("🏆","Trophy",      sY, Color3.fromRGB(255,215,0));  sY += 70
+local SaTab = makeSideTab("⚡","Super Auto",  sY, Color3.fromRGB(0,220,255))
 
 -- ================================================
 -- CONTENT AREA
@@ -683,6 +687,63 @@ local function makeStatusCard(parent, accent, order)
 end
 
 -- ===================================================
+-- HELPER: Simple ON/OFF row card (no status text)
+-- ===================================================
+local function makeSimpleToggleCard(parent, icon, label, accent, order)
+    local Card = Instance.new("Frame", parent)
+    Card.Size = UDim2.new(1,0,0,52)
+    Card.BackgroundColor3 = Color3.fromRGB(16,14,26)
+    Card.BorderSizePixel = 0
+    Card.ZIndex = 103
+    Card.LayoutOrder = order or 0
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0,12)
+    local cs = Instance.new("UIStroke", Card)
+    cs.Color = accent; cs.Thickness = 1.2; cs.Transparency = 0.7
+
+    local strip = Instance.new("Frame", Card)
+    strip.Size = UDim2.new(0,4,0.6,0)
+    strip.Position = UDim2.new(0,0,0.2,0)
+    strip.BackgroundColor3 = accent
+    strip.BackgroundTransparency = 0.7
+    strip.BorderSizePixel = 0
+    Instance.new("UICorner", strip).CornerRadius = UDim.new(1,0)
+
+    local IcoLbl = Instance.new("TextLabel", Card)
+    IcoLbl.Size = UDim2.new(0,32,0,32)
+    IcoLbl.Position = UDim2.new(0,12,0.5,-16)
+    IcoLbl.BackgroundTransparency = 1
+    IcoLbl.Text = icon
+    IcoLbl.TextSize = 18
+    IcoLbl.Font = Enum.Font.GothamBold
+    IcoLbl.ZIndex = 104
+
+    local NameLbl = Instance.new("TextLabel", Card)
+    NameLbl.Size = UDim2.new(0.5,0,1,0)
+    NameLbl.Position = UDim2.new(0,50,0,0)
+    NameLbl.BackgroundTransparency = 1
+    NameLbl.Text = label
+    NameLbl.TextColor3 = accent
+    NameLbl.TextSize = 10
+    NameLbl.Font = Enum.Font.GothamBold
+    NameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    NameLbl.ZIndex = 104
+
+    local TogBtn = Instance.new("TextButton", Card)
+    TogBtn.Size = UDim2.new(0,60,0,26)
+    TogBtn.Position = UDim2.new(1,-68,0.5,-13)
+    TogBtn.BackgroundColor3 = Color3.fromRGB(50,48,70)
+    TogBtn.Text = "OFF"
+    TogBtn.TextColor3 = Color3.fromRGB(140,136,170)
+    TogBtn.TextSize = 10
+    TogBtn.Font = Enum.Font.GothamBold
+    TogBtn.BorderSizePixel = 0
+    TogBtn.ZIndex = 104
+    Instance.new("UICorner", TogBtn).CornerRadius = UDim.new(0,8)
+
+    return {card=Card, togBtn=TogBtn, stroke=cs, strip=strip}
+end
+
+-- ===================================================
 -- PANEL 1: SOUVENIR
 -- ===================================================
 local PanelSouvenir = makePanel()
@@ -794,158 +855,165 @@ for i, sv in ipairs(souvenirs) do
 end
 
 -- ===================================================
--- PANEL 2: SUPER AUTO
+-- PANEL 2: AUTO CLAIM FREE GIFT
 -- ===================================================
 local PanelClaim = makePanel()
+local clBar = makeStatusCard(PanelClaim, Color3.fromRGB(80,180,255), 0)
+local ClaimStatusLbl = clBar.statusLbl
+local ClaimRunLbl    = clBar.runLbl
+local ClaimToggleBtn = clBar.togBtn
+local _clGrad        = clBar.grad
+local claimActive    = {}
+local claimStatus    = {}
 
--- ── helper buat feature card (icon, label, status, tombol ON/OFF) ──
-local function makeSuperFeatureCard(parent, icon, label, accentColor, layoutOrder)
-    local card = Instance.new("Frame", parent)
-    card.Size = UDim2.new(1,0,0,68)
-    card.BackgroundColor3 = Color3.fromRGB(14,12,24)
-    card.BorderSizePixel = 0
-    card.ZIndex = 103
-    card.LayoutOrder = layoutOrder
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0,14)
-    local cs = Instance.new("UIStroke", card)
-    cs.Color = accentColor; cs.Thickness = 1.3; cs.Transparency = 0.6
-    Instance.new("UIGradient", card).Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(18,16,30)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(10,9,20)),
-    })
-    -- accent bar kiri
-    local bar = Instance.new("Frame", card)
-    bar.Size = UDim2.new(0,4,0.65,0); bar.Position = UDim2.new(0,0,0.175,0)
-    bar.BackgroundColor3 = accentColor; bar.BorderSizePixel = 0
-    Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
-    -- icon circle
-    local iCirc = Instance.new("Frame", card)
-    iCirc.Size = UDim2.new(0,38,0,38); iCirc.Position = UDim2.new(0,14,0.5,-19)
-    iCirc.BackgroundColor3 = accentColor; iCirc.BackgroundTransparency = 0.82; iCirc.BorderSizePixel = 0
-    Instance.new("UICorner", iCirc).CornerRadius = UDim.new(1,0)
-    local iLbl = Instance.new("TextLabel", iCirc)
-    iLbl.Size = UDim2.new(1,0,1,0); iLbl.BackgroundTransparency = 1
-    iLbl.Text = icon; iLbl.TextSize = 18; iLbl.Font = Enum.Font.GothamBold; iLbl.ZIndex = 104
-    -- label fitur
-    local nameLbl = Instance.new("TextLabel", card)
-    nameLbl.Size = UDim2.new(0.5,0,0,20); nameLbl.Position = UDim2.new(0,60,0,10)
-    nameLbl.BackgroundTransparency = 1; nameLbl.Text = label
-    nameLbl.TextColor3 = accentColor; nameLbl.TextSize = 12
-    nameLbl.Font = Enum.Font.GothamBold; nameLbl.TextXAlignment = Enum.TextXAlignment.Left; nameLbl.ZIndex = 104
-    -- status label
-    local statLbl = Instance.new("TextLabel", card)
-    statLbl.Size = UDim2.new(0.5,0,0,15); statLbl.Position = UDim2.new(0,60,0,33)
-    statLbl.BackgroundTransparency = 1; statLbl.Text = "● Mati"
-    statLbl.TextColor3 = Color3.fromRGB(255,80,80); statLbl.TextSize = 9
-    statLbl.Font = Enum.Font.GothamBold; statLbl.TextXAlignment = Enum.TextXAlignment.Left; statLbl.ZIndex = 104
-    -- tombol ON/OFF
-    local togBtn = Instance.new("TextButton", card)
-    togBtn.Size = UDim2.new(0,62,0,28); togBtn.Position = UDim2.new(1,-70,0.5,-14)
-    togBtn.BackgroundColor3 = Color3.fromRGB(50,48,70); togBtn.Text = "OFF"
-    togBtn.TextColor3 = Color3.fromRGB(140,136,170); togBtn.TextSize = 10
-    togBtn.Font = Enum.Font.GothamBold; togBtn.BorderSizePixel = 0; togBtn.ZIndex = 104
-    Instance.new("UICorner", togBtn).CornerRadius = UDim.new(0,9)
+-- DIUBAH: "Auto Claim" → "Auto Claim Free Gift"
+makeSectionHeader(PanelClaim, "Auto Claim Free Gift", "🎁", 1)
 
-    return {card=card, stroke=cs, statLbl=statLbl, togBtn=togBtn, accentBar=bar}
+for n = 1, 12 do
+    claimActive[n] = true
+    local CCard = Instance.new("Frame", PanelClaim)
+    CCard.Size = UDim2.new(1,0,0,40)
+    CCard.BackgroundColor3 = Color3.fromRGB(14,13,24)
+    CCard.BorderSizePixel = 0
+    CCard.ZIndex = 103
+    CCard.LayoutOrder = n+1
+    Instance.new("UICorner", CCard).CornerRadius = UDim.new(0,10)
+    local ccs = Instance.new("UIStroke", CCard)
+    ccs.Color = Color3.fromRGB(80,180,255); ccs.Thickness = 1.1; ccs.Transparency = 0.7
+
+    local NumCirc = Instance.new("Frame", CCard)
+    NumCirc.Size = UDim2.new(0,26,0,26)
+    NumCirc.Position = UDim2.new(0,8,0.5,-13)
+    NumCirc.BackgroundColor3 = Color3.fromRGB(40,110,200)
+    NumCirc.BackgroundTransparency = 0.5
+    NumCirc.BorderSizePixel = 0
+    Instance.new("UICorner", NumCirc).CornerRadius = UDim.new(1,0)
+    local NumLbl = Instance.new("TextLabel", NumCirc)
+    NumLbl.Size = UDim2.new(1,0,1,0)
+    NumLbl.BackgroundTransparency = 1
+    NumLbl.Text = tostring(n)
+    NumLbl.TextColor3 = Color3.fromRGB(180,220,255)
+    NumLbl.TextSize = 10
+    NumLbl.Font = Enum.Font.GothamBold
+    NumLbl.ZIndex = 104
+
+    local CNameLbl = Instance.new("TextLabel", CCard)
+    CNameLbl.Size = UDim2.new(0.4,0,1,0)
+    CNameLbl.Position = UDim2.new(0,42,0,0)
+    CNameLbl.BackgroundTransparency = 1
+    CNameLbl.Text = "Award #"..n
+    CNameLbl.TextColor3 = Color3.fromRGB(140,185,255)
+    CNameLbl.TextSize = 10
+    CNameLbl.Font = Enum.Font.GothamBold
+    CNameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    CNameLbl.ZIndex = 104
+
+    local CStatLbl = Instance.new("TextLabel", CCard)
+    CStatLbl.Size = UDim2.new(0,34,1,0)
+    CStatLbl.Position = UDim2.new(1,-100,0,0)
+    CStatLbl.BackgroundTransparency = 1
+    CStatLbl.Text = "—"
+    CStatLbl.TextColor3 = Color3.fromRGB(120,120,155)
+    CStatLbl.TextSize = 10
+    CStatLbl.Font = Enum.Font.GothamBold
+    CStatLbl.TextXAlignment = Enum.TextXAlignment.Center
+    CStatLbl.ZIndex = 104
+    claimStatus[n] = CStatLbl
+
+    local CTogBtn = Instance.new("TextButton", CCard)
+    CTogBtn.Size = UDim2.new(0,52,0,24)
+    CTogBtn.Position = UDim2.new(1,-60,0.5,-12)
+    CTogBtn.BackgroundColor3 = Color3.fromRGB(35,145,70)
+    CTogBtn.Text = "ON"
+    CTogBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    CTogBtn.TextSize = 9
+    CTogBtn.Font = Enum.Font.GothamBold
+    CTogBtn.BorderSizePixel = 0
+    CTogBtn.ZIndex = 104
+    Instance.new("UICorner", CTogBtn).CornerRadius = UDim.new(0,6)
+
+    local ni = n
+    CTogBtn.MouseButton1Click:Connect(function()
+        claimActive[ni] = not claimActive[ni]
+        if claimActive[ni] then
+            CTogBtn.Text = "ON"; CTogBtn.BackgroundColor3 = Color3.fromRGB(35,145,70)
+            ccs.Transparency = 0.7; CCard.BackgroundColor3 = Color3.fromRGB(14,13,24)
+        else
+            CTogBtn.Text = "OFF"; CTogBtn.BackgroundColor3 = Color3.fromRGB(140,40,40)
+            ccs.Transparency = 0.9; CCard.BackgroundColor3 = Color3.fromRGB(12,10,20)
+        end
+    end)
 end
 
--- ─────────────────────────────
--- Section: Auto Claim
--- ─────────────────────────────
-makeSectionHeader(PanelClaim, "Auto Claim", "🎁", 0)
-
-local acClaimWidget = makeSuperFeatureCard(PanelClaim, "🎁", "Auto Claim", Color3.fromRGB(80,180,255), 1)
-local ClaimTogBtn   = acClaimWidget.togBtn
-local ClaimStatLbl  = acClaimWidget.statLbl
-local ClaimCardStroke = acClaimWidget.stroke
-
-local claimAktifSA  = false
-local claimLoopThread = nil
-
-local function fireAllAwards()
+local function setClaimON()
+    ClaimStatusLbl.Text = "● AKTIF"; ClaimStatusLbl.TextColor3 = Color3.fromRGB(80,255,130)
+    ClaimToggleBtn.Text = "■  MATIKAN"
+    _clGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(220,65,65)),ColorSequenceKeypoint.new(1,Color3.fromRGB(160,35,35))})
+end
+local function setClaimOFF()
+    ClaimStatusLbl.Text = "● MATI"; ClaimStatusLbl.TextColor3 = Color3.fromRGB(255,80,80)
+    ClaimToggleBtn.Text = "▶  NYALAKAN"; ClaimRunLbl.Text = "Menunggu..."
+    _clGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,110)),ColorSequenceKeypoint.new(1,Color3.fromRGB(30,140,70))})
     for n = 1, 12 do
-        fireOnlineAward(n)
-        task.wait(0.35)
-    end
-end
-
-local function runClaimLoop()
-    while claimAktifSA do
-        ClaimStatLbl.Text = "⏳ Mengambil..."; ClaimStatLbl.TextColor3 = Color3.fromRGB(255,210,60)
-        fireAllAwards()
-        if not claimAktifSA then break end
-        ClaimStatLbl.Text = "✔ Selesai — ulang "..claimDelay.."dtk"; ClaimStatLbl.TextColor3 = Color3.fromRGB(80,230,130)
-        for t = claimDelay, 1, -1 do
-            if not claimAktifSA then break end
-            ClaimStatLbl.Text = "⏱ Ulang dalam "..t.." dtk"; ClaimStatLbl.TextColor3 = Color3.fromRGB(160,200,255)
-            task.wait(1)
+        if claimStatus[n] and claimStatus[n].Parent then
+            claimStatus[n].Text = "—"; claimStatus[n].TextColor3 = Color3.fromRGB(120,120,155)
         end
     end
-    ClaimStatLbl.Text = "● Mati"; ClaimStatLbl.TextColor3 = Color3.fromRGB(255,80,80)
-    ClaimTogBtn.Text = "OFF"; ClaimTogBtn.BackgroundColor3 = Color3.fromRGB(50,48,70); ClaimTogBtn.TextColor3 = Color3.fromRGB(140,136,170)
-    ClaimCardStroke.Transparency = 0.6
 end
-
-ClaimTogBtn.MouseButton1Click:Connect(function()
-    claimAktifSA = not claimAktifSA
-    if claimAktifSA then
-        ClaimTogBtn.Text = "ON"; ClaimTogBtn.BackgroundColor3 = Color3.fromRGB(35,145,70); ClaimTogBtn.TextColor3 = Color3.fromRGB(255,255,255)
-        ClaimCardStroke.Transparency = 0.2
-        claimLoopThread = task.spawn(runClaimLoop)
-    else
-        claimAktifSA = false
-        ClaimStatLbl.Text = "● Mati"; ClaimStatLbl.TextColor3 = Color3.fromRGB(255,80,80)
-        ClaimTogBtn.Text = "OFF"; ClaimTogBtn.BackgroundColor3 = Color3.fromRGB(50,48,70); ClaimTogBtn.TextColor3 = Color3.fromRGB(140,136,170)
-        ClaimCardStroke.Transparency = 0.6
+local function runClaimLoop()
+    while claimAktif do
+        for n = 1, 12 do
+            if not claimAktif then break end
+            if not claimActive[n] then
+                if claimStatus[n] and claimStatus[n].Parent then claimStatus[n].Text = "skip" end
+                continue
+            end
+            ClaimRunLbl.Text = "Mengambil Award #"..n
+            if claimStatus[n] and claimStatus[n].Parent then
+                claimStatus[n].Text = "⏳"; claimStatus[n].TextColor3 = Color3.fromRGB(255,210,60)
+            end
+            fireOnlineAward(n); task.wait(0.4)
+            if claimStatus[n] and claimStatus[n].Parent then
+                claimStatus[n].Text = "✔"; claimStatus[n].TextColor3 = Color3.fromRGB(80,230,130)
+            end
+            task.wait(0.3)
+        end
+        for t = claimDelay, 1, -1 do
+            if not claimAktif then break end
+            ClaimRunLbl.Text = "Ulang dalam "..t.." dtk"; task.wait(1)
+        end
     end
-end)
-
--- ─────────────────────────────
--- Section: Auto Super Climb
--- ─────────────────────────────
-makeSectionHeader(PanelClaim, "Auto Super Climb", "🧗", 2)
-
-local acClimbWidget   = makeSuperFeatureCard(PanelClaim, "🧗", "Auto Super Climb", Color3.fromRGB(120,220,100), 3)
-local ClimbTogBtn     = acClimbWidget.togBtn
-local ClimbStatLbl    = acClimbWidget.statLbl
-local ClimbCardStroke = acClimbWidget.stroke
-
-local climbAktif = false
-local climbLoopThread = nil
-
-local function fireAutoClimb()
-    RS:WaitForChild("ServerMsg"):WaitForChild("Setting"):InvokeServer("isAutoCllect", 1)
+    setClaimOFF()
 end
-
-local function runClimbLoop()
-    while climbAktif do
-        pcall(fireAutoClimb)
-        task.wait(0.5)
-    end
-    ClimbStatLbl.Text = "● Mati"; ClimbStatLbl.TextColor3 = Color3.fromRGB(255,80,80)
-    ClimbTogBtn.Text = "OFF"; ClimbTogBtn.BackgroundColor3 = Color3.fromRGB(50,48,70); ClimbTogBtn.TextColor3 = Color3.fromRGB(140,136,170)
-    ClimbCardStroke.Transparency = 0.6
-end
-
-ClimbTogBtn.MouseButton1Click:Connect(function()
-    climbAktif = not climbAktif
-    if climbAktif then
-        ClimbTogBtn.Text = "ON"; ClimbTogBtn.BackgroundColor3 = Color3.fromRGB(35,145,70); ClimbTogBtn.TextColor3 = Color3.fromRGB(255,255,255)
-        ClimbCardStroke.Transparency = 0.2
-        ClimbStatLbl.Text = "● Aktif"; ClimbStatLbl.TextColor3 = Color3.fromRGB(80,255,130)
-        climbLoopThread = task.spawn(runClimbLoop)
-    else
-        climbAktif = false
-        ClimbStatLbl.Text = "● Mati"; ClimbStatLbl.TextColor3 = Color3.fromRGB(255,80,80)
-        ClimbTogBtn.Text = "OFF"; ClimbTogBtn.BackgroundColor3 = Color3.fromRGB(50,48,70); ClimbTogBtn.TextColor3 = Color3.fromRGB(140,136,170)
-        ClimbCardStroke.Transparency = 0.6
-    end
+ClaimToggleBtn.MouseButton1Click:Connect(function()
+    claimAktif = not claimAktif
+    if claimAktif then setClaimON(); task.spawn(runClaimLoop) end
 end)
 
 -- ===================================================
 -- PANEL 3: AUTO HATCH
 -- ===================================================
 local PanelHatch = makePanel()
+
+-- Tambah auto equip Souvenir Luck saat panel Hatch aktif
+local hatchLuckAktif = false
+local hatchLuckLoop  = nil
+
+local function startHatchLuck()
+    hatchLuckAktif = true
+    hatchLuckLoop = task.spawn(function()
+        while hatchLuckAktif do
+            local args = { "EquipBestSouvenir", 3 }
+            RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer(table.unpack(args))
+            task.wait(0.5)
+        end
+    end)
+end
+local function stopHatchLuck()
+    hatchLuckAktif = false
+    if hatchLuckLoop then task.cancel(hatchLuckLoop); hatchLuckLoop = nil end
+end
+
 local htBar = makeStatusCard(PanelHatch, Color3.fromRGB(160,80,255), 0)
 local HatchStatusLbl = htBar.statusLbl
 local HatchRunLbl    = htBar.runLbl
@@ -1038,15 +1106,60 @@ TotalHatchLbl.TextXAlignment = Enum.TextXAlignment.Left
 TotalHatchLbl.ZIndex = 104
 local totalHatchCount = 0
 
+-- Souvenir Luck indicator card di panel Hatch
+makeSectionHeader(PanelHatch, "Auto Souvenir Luck", "🍀", 4)
+local LuckCard = Instance.new("Frame", PanelHatch)
+LuckCard.Size = UDim2.new(1,0,0,44)
+LuckCard.BackgroundColor3 = Color3.fromRGB(14,12,24)
+LuckCard.BorderSizePixel = 0; LuckCard.ZIndex = 103; LuckCard.LayoutOrder = 5
+Instance.new("UICorner", LuckCard).CornerRadius = UDim.new(0,10)
+local luckStroke = Instance.new("UIStroke", LuckCard)
+luckStroke.Color = Color3.fromRGB(180,100,255); luckStroke.Thickness = 1.1; luckStroke.Transparency = 0.6
+
+local LuckIco = Instance.new("TextLabel", LuckCard)
+LuckIco.Size = UDim2.new(0,30,1,0)
+LuckIco.Position = UDim2.new(0,10,0,0)
+LuckIco.BackgroundTransparency = 1
+LuckIco.Text = "🍀"
+LuckIco.TextSize = 16; LuckIco.Font = Enum.Font.GothamBold; LuckIco.ZIndex = 104
+
+local LuckLbl = Instance.new("TextLabel", LuckCard)
+LuckLbl.Size = UDim2.new(0.55,0,1,0)
+LuckLbl.Position = UDim2.new(0,46,0,0)
+LuckLbl.BackgroundTransparency = 1
+LuckLbl.Text = "Souvenir Luck aktif otomatis saat Hatch ON"
+LuckLbl.TextColor3 = Color3.fromRGB(180,100,255)
+LuckLbl.TextSize = 8
+LuckLbl.Font = Enum.Font.Gotham
+LuckLbl.TextXAlignment = Enum.TextXAlignment.Left
+LuckLbl.TextWrapped = true
+LuckLbl.ZIndex = 104
+
+local LuckStatLbl = Instance.new("TextLabel", LuckCard)
+LuckStatLbl.Size = UDim2.new(0,60,0,22)
+LuckStatLbl.Position = UDim2.new(1,-68,0.5,-11)
+LuckStatLbl.BackgroundTransparency = 1
+LuckStatLbl.Text = "● MATI"
+LuckStatLbl.TextColor3 = Color3.fromRGB(255,80,80)
+LuckStatLbl.TextSize = 9; LuckStatLbl.Font = Enum.Font.GothamBold
+LuckStatLbl.TextXAlignment = Enum.TextXAlignment.Right
+LuckStatLbl.ZIndex = 104
+
 local function setHatchON()
     HatchStatusLbl.Text = "● AKTIF"; HatchStatusLbl.TextColor3 = Color3.fromRGB(80,255,130)
     HatchToggleBtn.Text = "■  MATIKAN"
     _htGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(220,65,65)),ColorSequenceKeypoint.new(1,Color3.fromRGB(160,35,35))})
+    -- Auto aktifkan Souvenir Luck
+    startHatchLuck()
+    LuckStatLbl.Text = "● AKTIF"; LuckStatLbl.TextColor3 = Color3.fromRGB(80,255,130)
 end
 local function setHatchOFF()
     HatchStatusLbl.Text = "● MATI"; HatchStatusLbl.TextColor3 = Color3.fromRGB(255,80,80)
     HatchToggleBtn.Text = "▶  NYALAKAN"; HatchRunLbl.Text = "Menunggu..."
     _htGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,110)),ColorSequenceKeypoint.new(1,Color3.fromRGB(30,140,70))})
+    -- Matikan Souvenir Luck
+    stopHatchLuck()
+    LuckStatLbl.Text = "● MATI"; LuckStatLbl.TextColor3 = Color3.fromRGB(255,80,80)
 end
 local function runHatchLoop()
     totalHatchCount = 0
@@ -1065,490 +1178,299 @@ HatchToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ===================================================
--- PANEL 4: PUSH TROPHY  (diganti dengan logika dari script test)
+-- PANEL 4: PUSH TROPHY
 -- ===================================================
 local PanelPushTrophy = makePanel()
+local ptBar = makeStatusCard(PanelPushTrophy, Color3.fromRGB(255,215,0), 0)
+local PTStatusLbl = ptBar.statusLbl
+local PTRunLbl    = ptBar.runLbl
+local PTToggleBtn = ptBar.togBtn
+local _ptGrad     = ptBar.grad
 
--- ── CONFIG THRESHOLD ──
-local PT_CFG = {
-    wins  = { value = 14000, mode = "above" },
-    speed = { value = 100,   mode = "below" },
-}
+makeSectionHeader(PanelPushTrophy, "Logika Souvenir Otomatis", "⚙", 1)
 
--- ── STATE ──
-local PT_STATE = {
-    running     = false,
-    currentMode = "IDLE",
-    winsCount   = 0,
-    lastHeight  = 0,
-    loop        = nil,
-}
+local PTRuleCard = Instance.new("Frame", PanelPushTrophy)
+PTRuleCard.Size = UDim2.new(1,0,0,66)
+PTRuleCard.BackgroundColor3 = Color3.fromRGB(16,14,24)
+PTRuleCard.BorderSizePixel = 0; PTRuleCard.ZIndex = 103; PTRuleCard.LayoutOrder = 2
+Instance.new("UICorner", PTRuleCard).CornerRadius = UDim.new(0,12)
+local _prs = Instance.new("UIStroke", PTRuleCard)
+_prs.Color = Color3.fromRGB(255,215,0); _prs.Thickness = 1.2; _prs.Transparency = 0.55
 
-local function ptGetHeight()
-    local char = LocalPlayer.Character
-    if char then
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if root then return root.Position.Y end
-    end
-    return 0
+local function makeRuleRow(parent, icon, cond, result, color, yOff)
+    local row = Instance.new("Frame", parent)
+    row.Size = UDim2.new(1,-16,0,22)
+    row.Position = UDim2.new(0,10,0,yOff)
+    row.BackgroundColor3 = color
+    row.BackgroundTransparency = 0.88
+    row.BorderSizePixel = 0
+    Instance.new("UICorner", row).CornerRadius = UDim.new(0,6)
+    local lbl = Instance.new("TextLabel", row)
+    lbl.Size = UDim2.new(1,-8,1,0)
+    lbl.Position = UDim2.new(0,8,0,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = icon.."  "..cond.."  →  "..result
+    lbl.TextColor3 = color
+    lbl.TextSize = 9
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.ZIndex = 104
 end
+makeRuleRow(PTRuleCard, "🏆", "Y > 14000", "Souvenir Wins", Color3.fromRGB(80,220,120), 8)
+makeRuleRow(PTRuleCard, "⚡", "Y < 100",   "Souvenir Speed", Color3.fromRGB(80,180,255), 36)
 
-local function ptCheckCondition(cfg, h)
-    if cfg.mode == "above" then return h > cfg.value
-    else return h < cfg.value end
+makeSectionHeader(PanelPushTrophy, "Monitor Posisi", "📡", 3)
+
+local PTHCard = Instance.new("Frame", PanelPushTrophy)
+PTHCard.Size = UDim2.new(1,0,0,70)
+PTHCard.BackgroundColor3 = Color3.fromRGB(14,12,24)
+PTHCard.BorderSizePixel = 0; PTHCard.ZIndex = 103; PTHCard.LayoutOrder = 4
+Instance.new("UICorner", PTHCard).CornerRadius = UDim.new(0,12)
+Instance.new("UIStroke", PTHCard).Color = Color3.fromRGB(255,215,0)
+
+local PTYTitle = Instance.new("TextLabel", PTHCard)
+PTYTitle.Size = UDim2.new(0.5,0,0,16)
+PTYTitle.Position = UDim2.new(0,12,0,8)
+PTYTitle.BackgroundTransparency = 1
+PTYTitle.Text = "Posisi Y Karakter"
+PTYTitle.TextColor3 = Color3.fromRGB(130,125,165)
+PTYTitle.TextSize = 9
+PTYTitle.Font = Enum.Font.Gotham
+PTYTitle.TextXAlignment = Enum.TextXAlignment.Left
+PTYTitle.ZIndex = 104
+
+local PTYVal = Instance.new("TextLabel", PTHCard)
+PTYVal.Size = UDim2.new(0.45,0,0,30)
+PTYVal.Position = UDim2.new(0,12,0,26)
+PTYVal.BackgroundTransparency = 1
+PTYVal.Text = "0.0"
+PTYVal.TextColor3 = Color3.fromRGB(255,215,0)
+PTYVal.TextSize = 22
+PTYVal.Font = Enum.Font.GothamBold
+PTYVal.TextXAlignment = Enum.TextXAlignment.Left
+PTYVal.ZIndex = 104
+
+local PTZoneLbl = Instance.new("TextLabel", PTHCard)
+PTZoneLbl.Size = UDim2.new(0.45,0,1,0)
+PTZoneLbl.Position = UDim2.new(0.55,0,0,0)
+PTZoneLbl.BackgroundTransparency = 1
+PTZoneLbl.Text = "—"
+PTZoneLbl.TextColor3 = Color3.fromRGB(160,155,190)
+PTZoneLbl.TextSize = 10
+PTZoneLbl.Font = Enum.Font.GothamBold
+PTZoneLbl.TextXAlignment = Enum.TextXAlignment.Left
+PTZoneLbl.ZIndex = 104
+
+local PTActCard = Instance.new("Frame", PanelPushTrophy)
+PTActCard.Size = UDim2.new(1,0,0,40)
+PTActCard.BackgroundColor3 = Color3.fromRGB(14,12,24)
+PTActCard.BorderSizePixel = 0; PTActCard.ZIndex = 103; PTActCard.LayoutOrder = 5
+Instance.new("UICorner", PTActCard).CornerRadius = UDim.new(0,10)
+Instance.new("UIStroke", PTActCard).Color = Color3.fromRGB(255,215,0)
+
+local PTActTitle = Instance.new("TextLabel", PTActCard)
+PTActTitle.Size = UDim2.new(0.45,0,1,0)
+PTActTitle.Position = UDim2.new(0,12,0,0)
+PTActTitle.BackgroundTransparency = 1
+PTActTitle.Text = "Souvenir Aktif"
+PTActTitle.TextColor3 = Color3.fromRGB(120,115,150)
+PTActTitle.TextSize = 9
+PTActTitle.Font = Enum.Font.Gotham
+PTActTitle.TextXAlignment = Enum.TextXAlignment.Left
+PTActTitle.ZIndex = 104
+
+local PTActVal = Instance.new("TextLabel", PTActCard)
+PTActVal.Size = UDim2.new(0.5,0,1,0)
+PTActVal.Position = UDim2.new(0.5,0,0,0)
+PTActVal.BackgroundTransparency = 1
+PTActVal.Text = "Menunggu..."
+PTActVal.TextColor3 = Color3.fromRGB(200,195,225)
+PTActVal.TextSize = 10
+PTActVal.Font = Enum.Font.GothamBold
+PTActVal.TextXAlignment = Enum.TextXAlignment.Right
+PTActVal.ZIndex = 104
+
+local PTLogCard = Instance.new("Frame", PanelPushTrophy)
+PTLogCard.Size = UDim2.new(1,0,0,36)
+PTLogCard.BackgroundColor3 = Color3.fromRGB(11,10,18)
+PTLogCard.BorderSizePixel = 0; PTLogCard.ZIndex = 103; PTLogCard.LayoutOrder = 6
+Instance.new("UICorner", PTLogCard).CornerRadius = UDim.new(0,9)
+local PTLogLbl = Instance.new("TextLabel", PTLogCard)
+PTLogLbl.Size = UDim2.new(1,-16,1,0)
+PTLogLbl.Position = UDim2.new(0,12,0,0)
+PTLogLbl.BackgroundTransparency = 1
+PTLogLbl.Text = "Log: —"
+PTLogLbl.TextColor3 = Color3.fromRGB(105,100,135)
+PTLogLbl.TextSize = 9
+PTLogLbl.Font = Enum.Font.Gotham
+PTLogLbl.TextXAlignment = Enum.TextXAlignment.Left
+PTLogLbl.TextWrapped = true
+PTLogLbl.ZIndex = 104
+
+local lastEquipped = ""
+local function setPTON()
+    PTStatusLbl.Text = "● AKTIF"; PTStatusLbl.TextColor3 = Color3.fromRGB(80,255,130)
+    PTToggleBtn.Text = "■  MATIKAN"
+    _ptGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(220,65,65)),ColorSequenceKeypoint.new(1,Color3.fromRGB(160,35,35))})
 end
-
-local function ptTw(obj, props, dur, style, dir)
-    style = style or Enum.EasingStyle.Quad
-    dir   = dir   or Enum.EasingDirection.Out
-    TweenService:Create(obj, TweenInfo.new(dur, style, dir), props):Play()
+local function setPTOFF()
+    PTStatusLbl.Text = "● MATI"; PTStatusLbl.TextColor3 = Color3.fromRGB(255,80,80)
+    PTToggleBtn.Text = "▶  NYALAKAN"; PTRunLbl.Text = "Menunggu..."
+    PTActVal.Text = "Menunggu..."; PTActVal.TextColor3 = Color3.fromRGB(200,195,225)
+    _ptGrad.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,110)),ColorSequenceKeypoint.new(1,Color3.fromRGB(30,140,70))})
+    lastEquipped = ""
 end
-
--- ── TOAST (untuk panel trophy) ──
-local function ptShowToast(msg, icon, col)
-    local toast = Instance.new("Frame", ScreenGui)
-    toast.Size=UDim2.new(0,300,0,54); toast.Position=UDim2.new(0.5,-150,0,-64)
-    toast.BackgroundColor3=Color3.fromRGB(12,10,22); toast.BackgroundTransparency=0
-    toast.BorderSizePixel=0; toast.ZIndex=500
-    Instance.new("UICorner", toast).CornerRadius = UDim.new(0,14)
-    local ts = Instance.new("UIStroke", toast)
-    ts.Color=col; ts.Thickness=1.8; ts.Transparency=0.15
-    Instance.new("UIGradient", toast).Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(22,18,42)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(10,8,18)),
-    })
-    local ico = Instance.new("TextLabel", toast)
-    ico.Size=UDim2.new(0,40,1,0); ico.Position=UDim2.new(0,6,0,0)
-    ico.BackgroundTransparency=1; ico.Text=icon; ico.TextSize=24
-    ico.Font=Enum.Font.GothamBold; ico.ZIndex=501
-    local ml = Instance.new("TextLabel", toast)
-    ml.Size=UDim2.new(1,-52,1,0); ml.Position=UDim2.new(0,50,0,0)
-    ml.BackgroundTransparency=1; ml.Text=msg; ml.TextColor3=Color3.fromRGB(235,230,255)
-    ml.TextSize=10; ml.Font=Enum.Font.GothamBold
-    ml.TextXAlignment=Enum.TextXAlignment.Left; ml.TextWrapped=true; ml.ZIndex=501
-    local bar = Instance.new("Frame", toast)
-    bar.Size=UDim2.new(1,0,0,3); bar.Position=UDim2.new(0,0,1,-3)
-    bar.BackgroundColor3=col; bar.BorderSizePixel=0; bar.ZIndex=502
-    Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
-    ptTw(toast, {Position=UDim2.new(0.5,-150,0,16)}, 0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-    task.delay(0.5, function() ptTw(bar, {Size=UDim2.new(0,0,0,3)}, 2.4, Enum.EasingStyle.Linear) end)
-    task.delay(3.1, function()
-        ptTw(toast, {Position=UDim2.new(0.5,-150,0,-64), BackgroundTransparency=1}, 0.35)
-        ptTw(ts, {Transparency=1}, 0.35)
-        task.delay(0.36, function() if toast.Parent then toast:Destroy() end end)
-    end)
-end
-
--- ── HEIGHT METER CARD ──
-makeSectionHeader(PanelPushTrophy, "Ketinggian Karakter", "📡", 0)
-
-local PTHeightCard = Instance.new("Frame", PanelPushTrophy)
-PTHeightCard.Size=UDim2.new(1,0,0,82); PTHeightCard.BackgroundColor3=Color3.fromRGB(12,10,22)
-PTHeightCard.BorderSizePixel=0; PTHeightCard.ZIndex=103; PTHeightCard.LayoutOrder=1
-Instance.new("UICorner", PTHeightCard).CornerRadius = UDim.new(0,14)
-local pthcStroke = Instance.new("UIStroke", PTHeightCard)
-pthcStroke.Color=Color3.fromRGB(255,215,0); pthcStroke.Thickness=1.4; pthcStroke.Transparency=0.5
-Instance.new("UIGradient", PTHeightCard).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0,Color3.fromRGB(22,18,42)),
-    ColorSequenceKeypoint.new(1,Color3.fromRGB(10,8,18)),
-})
-local pthcBarL = Instance.new("Frame", PTHeightCard)
-pthcBarL.Size=UDim2.new(0,4,0.7,0); pthcBarL.Position=UDim2.new(0,0,0.15,0)
-pthcBarL.BackgroundColor3=Color3.fromRGB(255,215,0); pthcBarL.BorderSizePixel=0
-Instance.new("UICorner", pthcBarL).CornerRadius = UDim.new(1,0)
-
-local PTHIcon = Instance.new("TextLabel", PTHeightCard)
-PTHIcon.Size=UDim2.new(0,38,0,38); PTHIcon.Position=UDim2.new(0,14,0.5,-19)
-PTHIcon.BackgroundTransparency=1; PTHIcon.Text="📡"; PTHIcon.TextSize=22
-PTHIcon.Font=Enum.Font.GothamBold; PTHIcon.ZIndex=104
-
-local PTHTitleLbl = Instance.new("TextLabel", PTHeightCard)
-PTHTitleLbl.Size=UDim2.new(0.5,0,0,16); PTHTitleLbl.Position=UDim2.new(0,58,0,10)
-PTHTitleLbl.BackgroundTransparency=1; PTHTitleLbl.Text="KETINGGIAN SAAT INI"
-PTHTitleLbl.TextColor3=Color3.fromRGB(130,120,170); PTHTitleLbl.TextSize=8
-PTHTitleLbl.Font=Enum.Font.GothamBold; PTHTitleLbl.TextXAlignment=Enum.TextXAlignment.Left; PTHTitleLbl.ZIndex=104
-
-local PTHeightValLbl = Instance.new("TextLabel", PTHeightCard)
-PTHeightValLbl.Size=UDim2.new(0.55,0,0,30); PTHeightValLbl.Position=UDim2.new(0,58,0,24)
-PTHeightValLbl.BackgroundTransparency=1; PTHeightValLbl.Text="0 studs"
-PTHeightValLbl.TextColor3=Color3.fromRGB(255,220,60); PTHeightValLbl.TextSize=20
-PTHeightValLbl.Font=Enum.Font.GothamBold; PTHeightValLbl.TextXAlignment=Enum.TextXAlignment.Left; PTHeightValLbl.ZIndex=104
-
-local PTHeightZoneLbl = Instance.new("TextLabel", PTHeightCard)
-PTHeightZoneLbl.Size=UDim2.new(0.42,0,0,22); PTHeightZoneLbl.Position=UDim2.new(0.56,0,0.5,-11)
-PTHeightZoneLbl.BackgroundTransparency=1; PTHeightZoneLbl.Text="〰 NORMAL"
-PTHeightZoneLbl.TextColor3=Color3.fromRGB(160,155,200); PTHeightZoneLbl.TextSize=10
-PTHeightZoneLbl.Font=Enum.Font.GothamBold; PTHeightZoneLbl.TextXAlignment=Enum.TextXAlignment.Right; PTHeightZoneLbl.ZIndex=104
-
-local pthBarBg = Instance.new("Frame", PTHeightCard)
-pthBarBg.Size=UDim2.new(1,-20,0,4); pthBarBg.Position=UDim2.new(0,10,1,-8)
-pthBarBg.BackgroundColor3=Color3.fromRGB(22,20,38); pthBarBg.BorderSizePixel=0; pthBarBg.ZIndex=104
-Instance.new("UICorner", pthBarBg).CornerRadius = UDim.new(1,0)
-local pthBarFill = Instance.new("Frame", pthBarBg)
-pthBarFill.Size=UDim2.new(0,0,1,0); pthBarFill.BackgroundColor3=Color3.fromRGB(255,215,0)
-pthBarFill.BorderSizePixel=0; pthBarFill.ZIndex=105
-Instance.new("UICorner", pthBarFill).CornerRadius = UDim.new(1,0)
-
--- ── THRESHOLD SETTING CARDS (tanpa tombol -100 +100 -1k +1k) ──
-makeSectionHeader(PanelPushTrophy, "Setting Batas Ketinggian", "⚙", 2)
-
-local ptWinsCS, ptSpeedCS  -- forward-declare untuk dipakai di applyMode
-
-local function makePTThresholdCard(icon, accentColor, label, cfgKey, layoutOrder)
-    local card = Instance.new("Frame", PanelPushTrophy)
-    card.Size=UDim2.new(1,0,0,96); card.BackgroundColor3=Color3.fromRGB(11,9,20)
-    card.BorderSizePixel=0; card.ZIndex=103; card.LayoutOrder=layoutOrder
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0,14)
-
-    local cs = Instance.new("UIStroke", card)
-    cs.Color=accentColor; cs.Thickness=1.4; cs.Transparency=0.5
-    Instance.new("UIGradient", card).Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(18,15,32)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(9,8,18)),
-    })
-
-    local strip = Instance.new("Frame", card)
-    strip.Size=UDim2.new(0,4,0.7,0); strip.Position=UDim2.new(0,0,0.15,0)
-    strip.BackgroundColor3=accentColor; strip.BorderSizePixel=0
-    Instance.new("UICorner", strip).CornerRadius = UDim.new(1,0)
-
-    local ico = Instance.new("TextLabel", card)
-    ico.Size=UDim2.new(0,36,0,36); ico.Position=UDim2.new(0,12,0,10)
-    ico.BackgroundTransparency=1; ico.Text=icon; ico.TextSize=20
-    ico.Font=Enum.Font.GothamBold; ico.ZIndex=104
-
-    local nameLbl = Instance.new("TextLabel", card)
-    nameLbl.Size=UDim2.new(0.46,0,0,18); nameLbl.Position=UDim2.new(0,54,0,10)
-    nameLbl.BackgroundTransparency=1; nameLbl.Text=label
-    nameLbl.TextColor3=accentColor; nameLbl.TextSize=12
-    nameLbl.Font=Enum.Font.GothamBold; nameLbl.TextXAlignment=Enum.TextXAlignment.Left; nameLbl.ZIndex=104
-
-    -- ABOVE / BELOW TOGGLE
-    local modeFrame = Instance.new("Frame", card)
-    modeFrame.Size=UDim2.new(0,146,0,28); modeFrame.Position=UDim2.new(1,-154,0,8)
-    modeFrame.BackgroundColor3=Color3.fromRGB(20,18,34); modeFrame.BorderSizePixel=0; modeFrame.ZIndex=104
-    Instance.new("UICorner", modeFrame).CornerRadius = UDim.new(0,8)
-    Instance.new("UIStroke", modeFrame).Color=Color3.fromRGB(50,44,80)
-
-    local modePill = Instance.new("Frame", modeFrame)
-    modePill.Size=UDim2.new(0.5,0,1,0); modePill.Position=UDim2.new(0,0,0,0)
-    modePill.BackgroundColor3=accentColor; modePill.BackgroundTransparency=0.25
-    modePill.BorderSizePixel=0; modePill.ZIndex=105
-    Instance.new("UICorner", modePill).CornerRadius = UDim.new(0,8)
-
-    local aboveLbl = Instance.new("TextLabel", modeFrame)
-    aboveLbl.Size=UDim2.new(0.5,0,1,0); aboveLbl.Position=UDim2.new(0,0,0,0)
-    aboveLbl.BackgroundTransparency=1; aboveLbl.Text="▲ DIATAS"
-    aboveLbl.TextColor3=Color3.fromRGB(255,255,255); aboveLbl.TextSize=9
-    aboveLbl.Font=Enum.Font.GothamBold; aboveLbl.ZIndex=106
-
-    local belowLbl = Instance.new("TextLabel", modeFrame)
-    belowLbl.Size=UDim2.new(0.5,0,1,0); belowLbl.Position=UDim2.new(0.5,0,0,0)
-    belowLbl.BackgroundTransparency=1; belowLbl.Text="▼ DIBAWAH"
-    belowLbl.TextColor3=Color3.fromRGB(130,120,165); belowLbl.TextSize=9
-    belowLbl.Font=Enum.Font.GothamBold; belowLbl.ZIndex=106
-
-    local modeBtn = Instance.new("TextButton", modeFrame)
-    modeBtn.Size=UDim2.new(1,0,1,0); modeBtn.BackgroundTransparency=1
-    modeBtn.Text=""; modeBtn.ZIndex=107
-
-    -- TextBox nilai (input manual saja, tanpa quick buttons)
-    local valRow = Instance.new("Frame", card)
-    valRow.Size=UDim2.new(1,-20,0,36); valRow.Position=UDim2.new(0,10,0,52)
-    valRow.BackgroundTransparency=1; valRow.ZIndex=104
-
-    local valBg = Instance.new("Frame", valRow)
-    valBg.Size=UDim2.new(1,0,1,0); valBg.Position=UDim2.new(0,0,0,0)
-    valBg.BackgroundColor3=Color3.fromRGB(14,12,26); valBg.BorderSizePixel=0; valBg.ZIndex=104
-    Instance.new("UICorner", valBg).CornerRadius = UDim.new(0,9)
-    local valStroke = Instance.new("UIStroke", valBg)
-    valStroke.Color=accentColor; valStroke.Thickness=1.2; valStroke.Transparency=0.55
-
-    local valPrefix = Instance.new("TextLabel", valBg)
-    valPrefix.Size=UDim2.new(0,28,1,0); valPrefix.Position=UDim2.new(0,6,0,0)
-    valPrefix.BackgroundTransparency=1; valPrefix.Text="📏"
-    valPrefix.TextSize=14; valPrefix.Font=Enum.Font.GothamBold; valPrefix.ZIndex=105
-
-    local valBox = Instance.new("TextBox", valBg)
-    valBox.Size=UDim2.new(1,-36,1,0); valBox.Position=UDim2.new(0,34,0,0)
-    valBox.BackgroundTransparency=1; valBox.Text=tostring(PT_CFG[cfgKey].value)
-    valBox.TextColor3=accentColor; valBox.PlaceholderText="Ketik angka..."
-    valBox.PlaceholderColor3=Color3.fromRGB(80,70,110)
-    valBox.TextSize=14; valBox.Font=Enum.Font.GothamBold
-    valBox.TextXAlignment=Enum.TextXAlignment.Left
-    valBox.ClearTextOnFocus=false; valBox.ZIndex=106
-
-    -- kondisi preview label
-    local condLbl = Instance.new("TextLabel", card)
-    condLbl.Size=UDim2.new(1,-20,0,14); condLbl.Position=UDim2.new(0,10,1,-16)
-    condLbl.BackgroundTransparency=1
-    condLbl.TextColor3=Color3.fromRGB(120,115,160); condLbl.TextSize=8
-    condLbl.Font=Enum.Font.Gotham; condLbl.TextWrapped=true
-    condLbl.TextXAlignment=Enum.TextXAlignment.Left; condLbl.ZIndex=104
-
-    local cfg = PT_CFG[cfgKey]
-
-    local function updateUI()
-        local modeIsAbove = (cfg.mode == "above")
-        ptTw(modePill, {Position=UDim2.new(modeIsAbove and 0 or 0.5, 0, 0, 0)}, 0.22, Enum.EasingStyle.Quad)
-        aboveLbl.TextColor3 = modeIsAbove and Color3.fromRGB(255,255,255) or Color3.fromRGB(130,120,165)
-        belowLbl.TextColor3 = modeIsAbove and Color3.fromRGB(130,120,165) or Color3.fromRGB(255,255,255)
-        local sym = modeIsAbove and ">" or "<"
-        condLbl.Text = "aktif jika Y "..sym.." "..tostring(cfg.value)
-        cs.Transparency = 0.35
-        ptTw(cs, {Transparency=0.55}, 0.4)
-    end
-
-    modeBtn.MouseButton1Click:Connect(function()
-        cfg.mode = (cfg.mode == "above") and "below" or "above"
-        updateUI()
-        if PT_STATE.running then PT_STATE.currentMode = "IDLE" end
-        ptShowToast(label.." → "..(cfg.mode=="above" and "▲ DIATAS" or "▼ DIBAWAH").." "..tostring(cfg.value), icon, accentColor)
-    end)
-
-    local function applyVal()
-        local raw = valBox.Text:gsub("[^%d%-]","")
-        local num = tonumber(raw)
-        if num then
-            cfg.value = num
-            valBox.Text = tostring(num)
+local function runPushTrophyLoop()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hrp = character:WaitForChild("HumanoidRootPart")
+    while pushTrophyAktif do
+        local posY = hrp.Position.Y
+        PTYVal.Text = string.format("%.1f", posY)
+        if posY > 14000 then
+            PTZoneLbl.Text = "🏆 ZONE WINS"; PTZoneLbl.TextColor3 = Color3.fromRGB(80,220,120)
+            PTRunLbl.Text = "Y="..string.format("%.0f",posY).." | Wins"
+            if lastEquipped ~= "wins" then
+                fireSouvenirWins(); lastEquipped = "wins"
+                PTActVal.Text = "🏆 Souvenir Wins"; PTActVal.TextColor3 = Color3.fromRGB(80,220,120)
+                PTLogLbl.Text = "Log: Equip Wins @ Y="..string.format("%.0f",posY)
+            end
+        elseif posY < 100 then
+            PTZoneLbl.Text = "⚡ ZONE SPEED"; PTZoneLbl.TextColor3 = Color3.fromRGB(80,180,255)
+            PTRunLbl.Text = "Y="..string.format("%.0f",posY).." | Speed"
+            if lastEquipped ~= "speed" then
+                fireSouvenirSpeed(); lastEquipped = "speed"
+                PTActVal.Text = "⚡ Souvenir Speed"; PTActVal.TextColor3 = Color3.fromRGB(80,180,255)
+                PTLogLbl.Text = "Log: Equip Speed @ Y="..string.format("%.0f",posY)
+            end
         else
-            valBox.Text = tostring(cfg.value)
+            PTZoneLbl.Text = "◌ Netral"; PTZoneLbl.TextColor3 = Color3.fromRGB(160,155,190)
+            PTRunLbl.Text = "Y="..string.format("%.0f",posY).." | Zona netral"
+            lastEquipped = ""
+            PTActVal.Text = "— (zona netral)"; PTActVal.TextColor3 = Color3.fromRGB(145,140,175)
         end
-        updateUI()
-        if PT_STATE.running then PT_STATE.currentMode = "IDLE" end
+        task.wait(0.3)
     end
-    valBox.FocusLost:Connect(applyVal)
-
-    updateUI()
-    return card, cs, condLbl
+    setPTOFF()
 end
-
-local WinsSettingCard, ptWinsCS_ref, WinsCondLbl   = makePTThresholdCard("🏆", Color3.fromRGB(255,215,0),  "Souvenir WINS",  "wins",  3)
-local SpeedSettingCard, ptSpeedCS_ref, SpeedCondLbl = makePTThresholdCard("⚡",  Color3.fromRGB(80,180,255), "Souvenir SPEED", "speed", 4)
-ptWinsCS  = ptWinsCS_ref
-ptSpeedCS = ptSpeedCS_ref
-
--- ── STATUS CARD (toggle aktif) ──
-local PTStatCard = Instance.new("Frame", PanelPushTrophy)
-PTStatCard.Size=UDim2.new(1,0,0,68); PTStatCard.BackgroundColor3=Color3.fromRGB(12,10,22)
-PTStatCard.BorderSizePixel=0; PTStatCard.ZIndex=103; PTStatCard.LayoutOrder=5
-Instance.new("UICorner", PTStatCard).CornerRadius = UDim.new(0,14)
-local ptScSt = Instance.new("UIStroke", PTStatCard)
-ptScSt.Color=Color3.fromRGB(255,215,0); ptScSt.Thickness=1.5; ptScSt.Transparency=0.55
-Instance.new("UIGradient", PTStatCard).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0,Color3.fromRGB(22,20,40)),
-    ColorSequenceKeypoint.new(1,Color3.fromRGB(10,8,20)),
-})
-local ptScBarL = Instance.new("Frame", PTStatCard)
-ptScBarL.Size=UDim2.new(0,4,0.7,0); ptScBarL.Position=UDim2.new(0,0,0.15,0)
-ptScBarL.BackgroundColor3=Color3.fromRGB(255,215,0); ptScBarL.BorderSizePixel=0
-Instance.new("UICorner", ptScBarL).CornerRadius = UDim.new(1,0)
-
-local PTStatusLbl = Instance.new("TextLabel", PTStatCard)
-PTStatusLbl.Size=UDim2.new(0.52,0,0,22); PTStatusLbl.Position=UDim2.new(0,16,0,8)
-PTStatusLbl.BackgroundTransparency=1; PTStatusLbl.Text="● MATI"
-PTStatusLbl.TextColor3=Color3.fromRGB(255,80,80); PTStatusLbl.TextSize=13
-PTStatusLbl.Font=Enum.Font.GothamBold; PTStatusLbl.TextXAlignment=Enum.TextXAlignment.Left; PTStatusLbl.ZIndex=104
-
-local PTRunLbl = Instance.new("TextLabel", PTStatCard)
-PTRunLbl.Size=UDim2.new(0.52,0,0,16); PTRunLbl.Position=UDim2.new(0,16,0,34)
-PTRunLbl.BackgroundTransparency=1; PTRunLbl.Text="Menunggu diaktifkan..."
-PTRunLbl.TextColor3=Color3.fromRGB(100,96,136); PTRunLbl.TextSize=9
-PTRunLbl.Font=Enum.Font.Gotham; PTRunLbl.TextXAlignment=Enum.TextXAlignment.Left; PTRunLbl.ZIndex=104
-
-local PTModeIconLbl = Instance.new("TextLabel", PTStatCard)
-PTModeIconLbl.Size=UDim2.new(0,32,0,32); PTModeIconLbl.Position=UDim2.new(0.52,0,0.5,-16)
-PTModeIconLbl.BackgroundTransparency=1; PTModeIconLbl.Text="〰"
-PTModeIconLbl.TextSize=18; PTModeIconLbl.Font=Enum.Font.GothamBold
-PTModeIconLbl.TextXAlignment=Enum.TextXAlignment.Center; PTModeIconLbl.ZIndex=104
-
-local PTTogBtn = Instance.new("TextButton", PTStatCard)
-PTTogBtn.Size=UDim2.new(0,106,0,34); PTTogBtn.Position=UDim2.new(1,-114,0.5,-17)
-PTTogBtn.BackgroundColor3=Color3.fromRGB(35,145,70); PTTogBtn.Text="▶ AKTIFKAN"
-PTTogBtn.TextColor3=Color3.fromRGB(255,255,255); PTTogBtn.TextSize=10
-PTTogBtn.Font=Enum.Font.GothamBold; PTTogBtn.BorderSizePixel=0; PTTogBtn.ZIndex=105
-Instance.new("UICorner", PTTogBtn).CornerRadius = UDim.new(0,10)
-local ptTogGrad = Instance.new("UIGradient", PTTogBtn)
-ptTogGrad.Color=ColorSequence.new({
-    ColorSequenceKeypoint.new(0,Color3.fromRGB(60,210,115)),
-    ColorSequenceKeypoint.new(1,Color3.fromRGB(30,140,65)),
-}); ptTogGrad.Rotation=90
-
--- ── WINS COUNTER CARD ──
-local PTCountCard = Instance.new("Frame", PanelPushTrophy)
-PTCountCard.Size=UDim2.new(1,0,0,58); PTCountCard.BackgroundColor3=Color3.fromRGB(12,10,20)
-PTCountCard.BorderSizePixel=0; PTCountCard.ZIndex=103; PTCountCard.LayoutOrder=6
-Instance.new("UICorner", PTCountCard).CornerRadius = UDim.new(0,12)
-Instance.new("UIStroke", PTCountCard).Color=Color3.fromRGB(255,215,0)
-
-local ptCIco = Instance.new("TextLabel", PTCountCard)
-ptCIco.Size=UDim2.new(0,36,0,36); ptCIco.Position=UDim2.new(0,10,0.5,-18)
-ptCIco.BackgroundTransparency=1; ptCIco.Text="🏆"; ptCIco.TextSize=20
-ptCIco.Font=Enum.Font.GothamBold; ptCIco.ZIndex=104
-
-local ptCTit = Instance.new("TextLabel", PTCountCard)
-ptCTit.Size=UDim2.new(0.44,0,0,14); ptCTit.Position=UDim2.new(0,54,0,8)
-ptCTit.BackgroundTransparency=1; ptCTit.Text="TOTAL WINS PUSH"
-ptCTit.TextColor3=Color3.fromRGB(200,175,80); ptCTit.TextSize=8
-ptCTit.Font=Enum.Font.GothamBold; ptCTit.TextXAlignment=Enum.TextXAlignment.Left; ptCTit.ZIndex=104
-
-local PTPushCountLbl = Instance.new("TextLabel", PTCountCard)
-PTPushCountLbl.Size=UDim2.new(0.25,0,0,26); PTPushCountLbl.Position=UDim2.new(0,54,0,22)
-PTPushCountLbl.BackgroundTransparency=1; PTPushCountLbl.Text="0"
-PTPushCountLbl.TextColor3=Color3.fromRGB(255,220,55); PTPushCountLbl.TextSize=20
-PTPushCountLbl.Font=Enum.Font.GothamBold; PTPushCountLbl.TextXAlignment=Enum.TextXAlignment.Left; PTPushCountLbl.ZIndex=104
-
-local ptResetBtn = Instance.new("TextButton", PTCountCard)
-ptResetBtn.Size=UDim2.new(0,60,0,26); ptResetBtn.Position=UDim2.new(1,-68,0.5,-13)
-ptResetBtn.BackgroundColor3=Color3.fromRGB(28,25,45); ptResetBtn.Text="Reset"
-ptResetBtn.TextColor3=Color3.fromRGB(160,140,80); ptResetBtn.TextSize=9
-ptResetBtn.Font=Enum.Font.GothamBold; ptResetBtn.BorderSizePixel=0; ptResetBtn.ZIndex=104
-Instance.new("UICorner", ptResetBtn).CornerRadius = UDim.new(0,8)
-ptResetBtn.MouseButton1Click:Connect(function()
-    PT_STATE.winsCount=0; PTPushCountLbl.Text="0"
-    ptShowToast("Counter WINS direset ke 0","🔄",Color3.fromRGB(255,215,0))
+PTToggleBtn.MouseButton1Click:Connect(function()
+    pushTrophyAktif = not pushTrophyAktif
+    if pushTrophyAktif then setPTON(); task.spawn(runPushTrophyLoop) end
 end)
 
--- ── LOG CARD ──
-local PTLogCard = Instance.new("Frame", PanelPushTrophy)
-PTLogCard.Size=UDim2.new(1,0,0,70); PTLogCard.BackgroundColor3=Color3.fromRGB(8,7,16)
-PTLogCard.BorderSizePixel=0; PTLogCard.ZIndex=103; PTLogCard.LayoutOrder=7
-Instance.new("UICorner", PTLogCard).CornerRadius = UDim.new(0,12)
-local ptLgSt = Instance.new("UIStroke", PTLogCard)
-ptLgSt.Color=Color3.fromRGB(55,50,90); ptLgSt.Thickness=1.2; ptLgSt.Transparency=0.5
-local ptLogListLayout = Instance.new("UIListLayout", PTLogCard)
-ptLogListLayout.Padding=UDim.new(0,2); ptLogListLayout.SortOrder=Enum.SortOrder.LayoutOrder
-local ptLogPad = Instance.new("UIPadding", PTLogCard)
-ptLogPad.PaddingLeft=UDim.new(0,10); ptLogPad.PaddingRight=UDim.new(0,10)
-ptLogPad.PaddingTop=UDim.new(0,8); ptLogPad.PaddingBottom=UDim.new(0,8)
+-- ===================================================
+-- PANEL 5: SUPER AUTO
+-- ===================================================
+local PanelSuperAuto = makePanel()
 
-local ptLogLines = {}
-local ptLogOrder = 0
-local function ptAddLog(msg, col)
-    col = col or Color3.fromRGB(130,125,170)
-    if #ptLogLines >= 3 then
-        local old = table.remove(ptLogLines,1)
-        if old and old.Parent then old:Destroy() end
-    end
-    ptLogOrder += 1
-    local l = Instance.new("TextLabel", PTLogCard)
-    l.Size=UDim2.new(1,0,0,16); l.BackgroundTransparency=1
-    l.Text="› "..msg; l.TextColor3=col; l.TextSize=8
-    l.Font=Enum.Font.Gotham; l.TextXAlignment=Enum.TextXAlignment.Left
-    l.ZIndex=104; l.LayoutOrder=ptLogOrder
-    table.insert(ptLogLines, l)
-end
-ptAddLog("Sistem siap. Setting batas ketinggian dulu!", Color3.fromRGB(100,96,140))
+makeSectionHeader(PanelSuperAuto, "Super Auto", "⚡", 0)
 
--- ── LOGIC APPLY MODE ──
-local function ptApplyMode(mode, h)
-    if mode == PT_STATE.currentMode then return end
-    PT_STATE.currentMode = mode
-
-    if mode == "WINS" then
-        fireSouvenirWins()
-        PT_STATE.winsCount += 1
-        PTPushCountLbl.Text = tostring(PT_STATE.winsCount)
-        ptTw(PTPushCountLbl,{TextColor3=Color3.fromRGB(255,255,120)},0.08)
-        task.delay(0.12, function() ptTw(PTPushCountLbl,{TextColor3=Color3.fromRGB(255,220,55)},0.3) end)
-        local sym = PT_CFG.wins.mode=="above" and ">" or "<"
-        PTHeightZoneLbl.Text="🏆 WINS ZONE"; PTHeightZoneLbl.TextColor3=Color3.fromRGB(255,215,0)
-        PTModeIconLbl.Text="🏆"
-        PTRunLbl.Text="WINS  Y"..sym..PT_CFG.wins.value.."  ["..math.floor(h).."]"
-        PTRunLbl.TextColor3=Color3.fromRGB(255,215,0)
-        pthBarFill.BackgroundColor3=Color3.fromRGB(255,215,0)
-        ptScSt.Color=Color3.fromRGB(255,215,0)
-        pthcBarL.BackgroundColor3=Color3.fromRGB(255,215,0)
-        ptWinsCS_ref.Transparency=0.08; ptSpeedCS_ref.Transparency=0.82
-        ptAddLog("🏆 WINS #"..PT_STATE.winsCount.." @ "..math.floor(h).." studs", Color3.fromRGB(255,215,0))
-        ptShowToast("🏆 WINS Aktif!  Total: "..PT_STATE.winsCount.."x","🏆",Color3.fromRGB(255,215,0))
-
-    elseif mode == "SPEED" then
-        fireSouvenirSpeed()
-        local sym = PT_CFG.speed.mode=="above" and ">" or "<"
-        PTHeightZoneLbl.Text="⚡ SPEED ZONE"; PTHeightZoneLbl.TextColor3=Color3.fromRGB(80,180,255)
-        PTModeIconLbl.Text="⚡"
-        PTRunLbl.Text="SPEED  Y"..sym..PT_CFG.speed.value.."  ["..math.floor(h).."]"
-        PTRunLbl.TextColor3=Color3.fromRGB(80,200,255)
-        pthBarFill.BackgroundColor3=Color3.fromRGB(80,180,255)
-        ptScSt.Color=Color3.fromRGB(80,180,255)
-        pthcBarL.BackgroundColor3=Color3.fromRGB(80,180,255)
-        ptSpeedCS_ref.Transparency=0.08; ptWinsCS_ref.Transparency=0.82
-        ptAddLog("⚡ SPEED @ "..math.floor(h).." studs", Color3.fromRGB(80,200,255))
-        ptShowToast("⚡ SPEED Aktif!","⚡",Color3.fromRGB(80,180,255))
-
-    else
-        PTHeightZoneLbl.Text="〰 NORMAL"; PTHeightZoneLbl.TextColor3=Color3.fromRGB(130,125,170)
-        PTModeIconLbl.Text="〰"
-        PTRunLbl.Text="Memantau ketinggian..."; PTRunLbl.TextColor3=Color3.fromRGB(100,96,136)
-        ptScSt.Color=Color3.fromRGB(255,215,0)
-        pthcBarL.BackgroundColor3=Color3.fromRGB(255,215,0)
-        ptWinsCS_ref.Transparency=0.5; ptSpeedCS_ref.Transparency=0.5
-        ptAddLog("Normal zone @ "..math.floor(h).." studs", Color3.fromRGB(130,125,170))
-    end
-end
-
--- ── MAIN LOOP ──
-local function ptStartLoop()
-    PT_STATE.running=true; PT_STATE.currentMode="IDLE"
-    PTStatusLbl.Text="● AKTIF"; PTStatusLbl.TextColor3=Color3.fromRGB(80,255,130)
-    PTTogBtn.Text="■ MATIKAN"
-    ptTogGrad.Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(220,65,65)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(160,35,35)),
-    })
-    ptShowToast("🚀 Push Trophy aktif!","🚀",Color3.fromRGB(80,255,130))
-    ptAddLog("Loop dimulai!", Color3.fromRGB(80,255,130))
-
-    PT_STATE.loop = task.spawn(function()
-        while PT_STATE.running do
-            local h = ptGetHeight()
-            PT_STATE.lastHeight = h
-            PTHeightValLbl.Text = math.floor(h).." studs"
-            pthBarFill.Size = UDim2.new(math.clamp(h/20000,0,1),0,1,0)
-
-            local targetMode
-            if ptCheckCondition(PT_CFG.wins, h) then
-                targetMode = "WINS"
-            elseif ptCheckCondition(PT_CFG.speed, h) then
-                targetMode = "SPEED"
-            else
-                targetMode = "IDLE"
+-- 1. Auto Claim Free Gift (toggle simple, panggil claim logic)
+local saClaimAktif = false
+local saClaimRow = makeSimpleToggleCard(PanelSuperAuto, "🎁", "Auto Claim Free Gift", Color3.fromRGB(80,180,255), 1)
+saClaimRow.togBtn.MouseButton1Click:Connect(function()
+    saClaimAktif = not saClaimAktif
+    if saClaimAktif then
+        saClaimRow.togBtn.Text = "ON"
+        saClaimRow.togBtn.BackgroundColor3 = Color3.fromRGB(35,145,70)
+        saClaimRow.togBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        saClaimRow.stroke.Transparency = 0.3
+        saClaimRow.card.BackgroundColor3 = Color3.fromRGB(14,22,18)
+        saClaimRow.strip.BackgroundTransparency = 0.2
+        -- jalankan claim sekali penuh
+        task.spawn(function()
+            for n = 1, 12 do
+                if not saClaimAktif then break end
+                fireOnlineAward(n); task.wait(0.4)
             end
-
-            ptApplyMode(targetMode, h)
-            task.wait(0.5)
-        end
-    end)
-end
-
-local function ptStopLoop()
-    PT_STATE.running=false
-    if PT_STATE.loop then task.cancel(PT_STATE.loop); PT_STATE.loop=nil end
-    PT_STATE.currentMode="IDLE"
-    PTStatusLbl.Text="● MATI"; PTStatusLbl.TextColor3=Color3.fromRGB(255,80,80)
-    PTTogBtn.Text="▶ AKTIFKAN"
-    ptTogGrad.Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(60,210,115)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(30,140,65)),
-    })
-    PTRunLbl.Text="Menunggu diaktifkan..."; PTRunLbl.TextColor3=Color3.fromRGB(100,96,136)
-    PTModeIconLbl.Text="〰"
-    PTHeightZoneLbl.Text="〰 NORMAL"; PTHeightZoneLbl.TextColor3=Color3.fromRGB(130,125,170)
-    ptScSt.Color=Color3.fromRGB(255,215,0)
-    ptWinsCS_ref.Transparency=0.5; ptSpeedCS_ref.Transparency=0.5
-    ptAddLog("Loop dihentikan.", Color3.fromRGB(255,80,80))
-    ptShowToast("⏹ Push Trophy dimatikan","⏹",Color3.fromRGB(255,80,80))
-    pushTrophyAktif = false
-end
-
-PTTogBtn.MouseButton1Click:Connect(function()
-    if PT_STATE.running then
-        ptStopLoop()
+            -- reset UI setelah selesai
+            saClaimAktif = false
+            saClaimRow.togBtn.Text = "OFF"
+            saClaimRow.togBtn.BackgroundColor3 = Color3.fromRGB(50,48,70)
+            saClaimRow.togBtn.TextColor3 = Color3.fromRGB(140,136,170)
+            saClaimRow.stroke.Transparency = 0.7
+            saClaimRow.card.BackgroundColor3 = Color3.fromRGB(16,14,26)
+            saClaimRow.strip.BackgroundTransparency = 0.7
+        end)
     else
-        pushTrophyAktif = true
-        ptStartLoop()
+        saClaimAktif = false
+        saClaimRow.togBtn.Text = "OFF"
+        saClaimRow.togBtn.BackgroundColor3 = Color3.fromRGB(50,48,70)
+        saClaimRow.togBtn.TextColor3 = Color3.fromRGB(140,136,170)
+        saClaimRow.stroke.Transparency = 0.7
+        saClaimRow.card.BackgroundColor3 = Color3.fromRGB(16,14,26)
+        saClaimRow.strip.BackgroundTransparency = 0.7
+    end
+end)
+
+-- 2. Auto Super Climb (sekali aktif sekali jalan, bukan loop)
+local saClimbRow = makeSimpleToggleCard(PanelSuperAuto, "🧗", "Auto Super Climb", Color3.fromRGB(0,220,255), 2)
+saClimbRow.togBtn.MouseButton1Click:Connect(function()
+    if not superClimbAktif then
+        superClimbAktif = true
+        saClimbRow.togBtn.Text = "ON"
+        saClimbRow.togBtn.BackgroundColor3 = Color3.fromRGB(35,145,70)
+        saClimbRow.togBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        saClimbRow.stroke.Transparency = 0.3
+        saClimbRow.card.BackgroundColor3 = Color3.fromRGB(12,22,24)
+        saClimbRow.strip.BackgroundTransparency = 0.2
+        -- jalankan script Super Climb SEKALI
+        task.spawn(function()
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local humanoid = character:WaitForChild("Humanoid")
+            local hrp = character:WaitForChild("HumanoidRootPart")
+            -- Super Climb: naikkan posisi karakter ke Y tinggi
+            for _ = 1, 50 do
+                if not superClimbAktif then break end
+                hrp.CFrame = hrp.CFrame + Vector3.new(0, 10, 0)
+                task.wait(0.05)
+            end
+            -- Selesai, reset
+            superClimbAktif = false
+            saClimbRow.togBtn.Text = "OFF"
+            saClimbRow.togBtn.BackgroundColor3 = Color3.fromRGB(50,48,70)
+            saClimbRow.togBtn.TextColor3 = Color3.fromRGB(140,136,170)
+            saClimbRow.stroke.Transparency = 0.7
+            saClimbRow.card.BackgroundColor3 = Color3.fromRGB(16,14,26)
+            saClimbRow.strip.BackgroundTransparency = 0.7
+        end)
+    else
+        -- Matikan / batalkan
+        superClimbAktif = false
+        saClimbRow.togBtn.Text = "OFF"
+        saClimbRow.togBtn.BackgroundColor3 = Color3.fromRGB(50,48,70)
+        saClimbRow.togBtn.TextColor3 = Color3.fromRGB(140,136,170)
+        saClimbRow.stroke.Transparency = 0.7
+        saClimbRow.card.BackgroundColor3 = Color3.fromRGB(16,14,26)
+        saClimbRow.strip.BackgroundTransparency = 0.7
+    end
+end)
+
+-- 3. Auto Spin Daily (ON/OFF tanpa notifikasi)
+local saSpinRow = makeSimpleToggleCard(PanelSuperAuto, "🎰", "Auto Spin Daily", Color3.fromRGB(255,140,0), 3)
+local saSpinLoop = nil
+saSpinRow.togBtn.MouseButton1Click:Connect(function()
+    spinDailyAktif = not spinDailyAktif
+    if spinDailyAktif then
+        saSpinRow.togBtn.Text = "ON"
+        saSpinRow.togBtn.BackgroundColor3 = Color3.fromRGB(35,145,70)
+        saSpinRow.togBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        saSpinRow.stroke.Transparency = 0.3
+        saSpinRow.card.BackgroundColor3 = Color3.fromRGB(20,16,12)
+        saSpinRow.strip.BackgroundTransparency = 0.2
+        saSpinLoop = task.spawn(function()
+            while spinDailyAktif do
+                game:GetService("ReplicatedStorage"):WaitForChild("System"):WaitForChild("SystemDailyLottery"):WaitForChild("Spin"):InvokeServer()
+                task.wait(1)
+            end
+        end)
+    else
+        if saSpinLoop then task.cancel(saSpinLoop); saSpinLoop = nil end
+        saSpinRow.togBtn.Text = "OFF"
+        saSpinRow.togBtn.BackgroundColor3 = Color3.fromRGB(50,48,70)
+        saSpinRow.togBtn.TextColor3 = Color3.fromRGB(140,136,170)
+        saSpinRow.stroke.Transparency = 0.7
+        saSpinRow.card.BackgroundColor3 = Color3.fromRGB(16,14,26)
+        saSpinRow.strip.BackgroundTransparency = 0.7
     end
 end)
 
@@ -1560,6 +1482,7 @@ local TABS = {
     claim      = {panel=PanelClaim,       tab=ClTab, color=Color3.fromRGB(80,180,255)},
     hatch      = {panel=PanelHatch,       tab=HtTab, color=Color3.fromRGB(160,80,255)},
     pushtrophy = {panel=PanelPushTrophy,  tab=PtTab, color=Color3.fromRGB(255,215,0)},
+    superauto  = {panel=PanelSuperAuto,   tab=SaTab, color=Color3.fromRGB(0,220,255)},
 }
 
 local function switchTab(name)
@@ -1585,6 +1508,7 @@ SvTab.btn.MouseButton1Click:Connect(function() switchTab("souvenir") end)
 ClTab.btn.MouseButton1Click:Connect(function() switchTab("claim") end)
 HtTab.btn.MouseButton1Click:Connect(function() switchTab("hatch") end)
 PtTab.btn.MouseButton1Click:Connect(function() switchTab("pushtrophy") end)
+SaTab.btn.MouseButton1Click:Connect(function() switchTab("superauto") end)
 switchTab("souvenir")
 
 -- ================================================
@@ -1639,8 +1563,10 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     for _, sv in ipairs(souvenirs) do sv.aktif = false end
     for _, t in pairs(svLoops) do if t then task.cancel(t) end end
-    claimAktifSA = false; climbAktif = false; hatchAktif = false
-    if PT_STATE.running then ptStopLoop() end
+    claimAktif = false; hatchAktif = false; pushTrophyAktif = false
+    superClimbAktif = false; spinDailyAktif = false
+    stopHatchLuck()
+    if saSpinLoop then task.cancel(saSpinLoop) end
     task.wait(0.1)
     ScreenGui:Destroy()
 end)
