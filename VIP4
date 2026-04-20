@@ -14,7 +14,8 @@
 -- 10. Low Performance mode
 -- 11. Drag dari seluruh body GUI (bukan hanya titlebar)
 -- 12. Resize 8 arah (N/S/W/E/NW/NE/SW/SE) — tarik tepi/sudut GUI
--- 13. [NEW] Auto Pet Switch: Pet WINS <-> Pet SPEED sesuai ketinggian (Auto Pet Panel)
+-- 13. [NEW] Auto Pet Panel TERPISAH (tab sendiri di navbar atas)
+-- 14. [NEW] Tab panel berada di ATAS (horizontal navbar)
 -- ================================================
 
 local Players      = game:GetService("Players")
@@ -34,14 +35,13 @@ pcall(function()
     workspace.StreamingEnabled = false
 end)
 
--- Nonaktifkan shadow dan efek berat
 pcall(function()
     game:GetService("Lighting").GlobalShadows = false
     game:GetService("Lighting").FogEnd = 100000
 end)
 
 -- ================================================
--- SAFE WAIT (Anti lag / Anti reconnect)
+-- SAFE WAIT
 -- ================================================
 local function safeWait(t)
     t = t or 0
@@ -52,8 +52,7 @@ local function safeWait(t)
 end
 
 -- ================================================
--- SMART DELAY (ANTI DETECT)
--- Tambah variasi random ke semua jeda
+-- SMART DELAY
 -- ================================================
 local function smartDelay(base)
     local jitter = base * 0.2
@@ -271,9 +270,6 @@ local hatchAktif  = false
 local hatchDelay  = 3
 local hatchCount  = 10
 
-local superClimbAktif = false
-local spinDailyAktif  = false
-
 -- ================================================
 -- REMOTE FUNCTIONS
 -- ================================================
@@ -299,19 +295,16 @@ end
 local PET_WINS_IDS  = {7031, 12407, 12538, 12669, 12387, 9074, 12339, 15146}
 local PET_SPEED_IDS = {8930, 33418, 8737, 11091, 63565, 7487, 56843, 26526}
 
--- Fungsi DownPet
 local function downPet(petId)
     local args = { "DownPet", petId }
     RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
 end
 
--- Fungsi UpPet
 local function upPet(petId)
     local args = { "UpPet", petId }
     RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
 end
 
--- Lepas semua pet dari list tertentu
 local function lepasListPet(idList)
     for _, petId in ipairs(idList) do
         pcall(function() downPet(petId) end)
@@ -319,7 +312,6 @@ local function lepasListPet(idList)
     end
 end
 
--- Pasang semua pet dari list tertentu
 local function pasangListPet(idList)
     for _, petId in ipairs(idList) do
         pcall(function() upPet(petId) end)
@@ -396,8 +388,8 @@ end
 -- MAIN FRAME
 -- ================================================
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0,430,0,500)
-Frame.Position = UDim2.new(0.5,-215,0.5,-250)
+Frame.Size = UDim2.new(0,430,0,540)
+Frame.Position = UDim2.new(0.5,-215,0.5,-270)
 Frame.BackgroundColor3 = Color3.fromRGB(10,9,18)
 Frame.BorderSizePixel = 0
 Frame.Active = true
@@ -531,7 +523,7 @@ end
 -- RESIZE SYSTEM
 -- ================================================
 do
-    local MIN_W, MIN_H = 280, 340
+    local MIN_W, MIN_H = 280, 380
     local HANDLE_SIZE  = 10
 
     local handles = {
@@ -664,7 +656,7 @@ do
 end
 
 -- ================================================
--- BODY
+-- BODY FRAME
 -- ================================================
 local BodyFrame = Instance.new("Frame", Frame)
 BodyFrame.Size = UDim2.new(1,0,1,-42)
@@ -673,32 +665,32 @@ BodyFrame.BackgroundTransparency = 1
 BodyFrame.ZIndex = 101
 
 -- ================================================
--- SIDEBAR
+-- TOP NAVBAR (tab panel di atas, horizontal)
 -- ================================================
-local Sidebar = Instance.new("Frame", BodyFrame)
-Sidebar.Size = UDim2.new(0,84,1,0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(13,11,22)
-Sidebar.BorderSizePixel = 0
-Sidebar.ZIndex = 105
+local NavBar = Instance.new("Frame", BodyFrame)
+NavBar.Size = UDim2.new(1,0,0,40)
+NavBar.Position = UDim2.new(0,0,0,0)
+NavBar.BackgroundColor3 = Color3.fromRGB(13,11,22)
+NavBar.BorderSizePixel = 0
+NavBar.ZIndex = 105
 
-local SbLogo = Instance.new("TextLabel", Sidebar)
-SbLogo.Size = UDim2.new(1,0,0,24)
-SbLogo.Position = UDim2.new(0,0,1,-28)
-SbLogo.BackgroundTransparency = 1
-SbLogo.Text = "HAYU"
-SbLogo.TextColor3 = Color3.fromRGB(50,44,70)
-SbLogo.TextSize = 9
-SbLogo.Font = Enum.Font.GothamBold
-SbLogo.ZIndex = 106
+local NavLine = Instance.new("Frame", NavBar)
+NavLine.Size = UDim2.new(1,0,0,1)
+NavLine.Position = UDim2.new(0,0,1,-1)
+NavLine.BackgroundColor3 = Color3.fromRGB(255,175,0)
+NavLine.BackgroundTransparency = 0.75
+NavLine.BorderSizePixel = 0
+NavLine.ZIndex = 106
 
-local function makeSideTab(icon, label, yOff, accent)
-    local con = Instance.new("Frame", Sidebar)
-    con.Size = UDim2.new(1,-10,0,64)
-    con.Position = UDim2.new(0,5,0,yOff)
+-- ── Buat tab horizontal ──
+local function makeTopTab(icon, label, xPos, width, accent)
+    local con = Instance.new("Frame", NavBar)
+    con.Size = UDim2.new(0, width, 0, 36)
+    con.Position = UDim2.new(0, xPos, 0, 2)
     con.BackgroundColor3 = Color3.fromRGB(20,17,32)
     con.BorderSizePixel = 0
     con.ZIndex = 106
-    Instance.new("UICorner", con).CornerRadius = UDim.new(0,10)
+    Instance.new("UICorner", con).CornerRadius = UDim.new(0,8)
 
     local stroke = Instance.new("UIStroke", con)
     stroke.Color = accent
@@ -706,30 +698,31 @@ local function makeSideTab(icon, label, yOff, accent)
     stroke.Transparency = 0.88
 
     local bar = Instance.new("Frame", con)
-    bar.Size = UDim2.new(0,3,0.6,0)
-    bar.Position = UDim2.new(0,0,0.2,0)
+    bar.Size = UDim2.new(0.8,0,0,3)
+    bar.Position = UDim2.new(0.1,0,1,-3)
     bar.BackgroundColor3 = accent
     bar.BorderSizePixel = 0
     bar.Visible = false
     Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
 
     local ico = Instance.new("TextLabel", con)
-    ico.Size = UDim2.new(1,0,0,30)
-    ico.Position = UDim2.new(0,0,0,7)
+    ico.Size = UDim2.new(0,22,1,0)
+    ico.Position = UDim2.new(0,6,0,0)
     ico.BackgroundTransparency = 1
     ico.Text = icon
-    ico.TextSize = 20
+    ico.TextSize = 15
     ico.Font = Enum.Font.GothamBold
     ico.ZIndex = 107
 
     local lbl = Instance.new("TextLabel", con)
-    lbl.Size = UDim2.new(1,-4,0,16)
-    lbl.Position = UDim2.new(0,2,0,37)
+    lbl.Size = UDim2.new(1,-30,1,0)
+    lbl.Position = UDim2.new(0,28,0,0)
     lbl.BackgroundTransparency = 1
     lbl.Text = label
     lbl.TextColor3 = Color3.fromRGB(110,106,144)
-    lbl.TextSize = 8
+    lbl.TextSize = 9
     lbl.Font = Enum.Font.GothamBold
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.ZIndex = 107
 
     local btn = Instance.new("TextButton", con)
@@ -738,19 +731,25 @@ local function makeSideTab(icon, label, yOff, accent)
     btn.Text = ""
     btn.ZIndex = 108
 
-    return {frame=con, indicator=bar, nameLbl=lbl, btn=btn, stroke=stroke, accent=accent}
+    return {frame=con, indicator=bar, nameLbl=lbl, btn=btn, stroke=stroke, accent=accent, icoLbl=ico}
 end
 
-local sY = 8
-local HtTab = makeSideTab("🥚","Hatch",  sY, Color3.fromRGB(160,80,255)); sY += 70
-local PtTab = makeSideTab("🏆","Trophy", sY, Color3.fromRGB(255,215,0))
+-- 3 tab: Hatch | Trophy | Auto Pet
+-- Lebar tiap tab disesuaikan agar muat 3 tab di 430px
+local tabW = 130
+local tabGap = 5
+local tabStartX = 6
+
+local HtTab  = makeTopTab("🥚","Hatch",    tabStartX,                    tabW, Color3.fromRGB(160,80,255))
+local PtTab  = makeTopTab("🏆","Trophy",   tabStartX + (tabW+tabGap),    tabW, Color3.fromRGB(255,215,0))
+local ApTab  = makeTopTab("🐾","Auto Pet", tabStartX + (tabW+tabGap)*2,  tabW, Color3.fromRGB(80,200,255))
 
 -- ================================================
--- CONTENT AREA
+-- CONTENT AREA (di bawah navbar)
 -- ================================================
 local ContentArea = Instance.new("Frame", BodyFrame)
-ContentArea.Size = UDim2.new(1,-84,1,-6)
-ContentArea.Position = UDim2.new(0,84,0,3)
+ContentArea.Size = UDim2.new(1,-6,1,-46)
+ContentArea.Position = UDim2.new(0,3,0,43)
 ContentArea.BackgroundTransparency = 1
 ContentArea.ZIndex = 102
 
@@ -1124,24 +1123,11 @@ local CFG = {
     speed = { value = 12700, mode = "below" },
 }
 
--- Auto Pet CFG (threshold sendiri, terpisah dari souvenir)
-local AUTO_PET_CFG = {
-    wins  = { value = 12700, mode = "above" },
-    speed = { value = 12700, mode = "below" },
-}
-
 local TROPHY_STATE = {
     running     = false,
     currentMode = "IDLE",
     winsCount   = 0,
     lastHeight  = 0,
-    loop        = nil,
-}
-
--- Auto Pet State
-local AUTO_PET_STATE = {
-    running     = false,
-    currentMode = "IDLE",
     loop        = nil,
 }
 
@@ -1244,7 +1230,7 @@ ClaimCard.togBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════════
--- HEIGHT METER CARD
+-- PUSH TROPHY: HEIGHT METER + THRESHOLD
 -- ══════════════════════════════════════════════
 makeSectionHeader(PanelPushTrophy, "Push Trophy", "🏆", 2)
 
@@ -1282,11 +1268,9 @@ hBarFill.Size=UDim2.new(0,0,1,0); hBarFill.BackgroundColor3=Color3.fromRGB(255,2
 hBarFill.BorderSizePixel=0; hBarFill.ZIndex=105
 Instance.new("UICorner", hBarFill).CornerRadius = UDim.new(1,0)
 
--- ══════════════════════════════════════════════
--- THRESHOLD CARDS (Trophy / Souvenir)
--- ══════════════════════════════════════════════
-local function makeThresholdCard(icon, accentColor, label, cfgKey, layoutOrder)
-    local card = Instance.new("Frame", PanelPushTrophy)
+-- ── Threshold Cards (Trophy / Souvenir) ──
+local function makeThresholdCard(parent, icon, accentColor, label, cfgRef, layoutOrder)
+    local card = Instance.new("Frame", parent)
     card.Size=UDim2.new(1,0,0,78); card.BackgroundColor3=Color3.fromRGB(11,9,20)
     card.BorderSizePixel=0; card.ZIndex=103; card.LayoutOrder=layoutOrder
     Instance.new("UICorner", card).CornerRadius = UDim.new(0,14)
@@ -1354,32 +1338,30 @@ local function makeThresholdCard(icon, accentColor, label, cfgKey, layoutOrder)
 
     local valBox = Instance.new("TextBox", valBg)
     valBox.Size=UDim2.new(1,-36,1,0); valBox.Position=UDim2.new(0,34,0,0)
-    valBox.BackgroundTransparency=1; valBox.Text=tostring(CFG[cfgKey].value)
+    valBox.BackgroundTransparency=1; valBox.Text=tostring(cfgRef.value)
     valBox.TextColor3=accentColor; valBox.PlaceholderText="Ketik nilai..."
     valBox.PlaceholderColor3=Color3.fromRGB(80,70,110)
     valBox.TextSize=14; valBox.Font=Enum.Font.GothamBold
     valBox.TextXAlignment=Enum.TextXAlignment.Left
     valBox.ClearTextOnFocus=false; valBox.ZIndex=106
 
-    local cfg = CFG[cfgKey]
-
     local function updateUI()
-        local modeIsAbove = (cfg.mode == "above")
+        local modeIsAbove = (cfgRef.mode == "above")
         TweenService:Create(modePill, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {Position=UDim2.new(modeIsAbove and 0 or 0.5,0,0,0)}):Play()
         aboveLbl.TextColor3 = modeIsAbove and Color3.fromRGB(255,255,255) or Color3.fromRGB(130,120,165)
         belowLbl.TextColor3 = modeIsAbove and Color3.fromRGB(130,120,165) or Color3.fromRGB(255,255,255)
     end
 
     modeBtn.MouseButton1Click:Connect(function()
-        cfg.mode = (cfg.mode == "above") and "below" or "above"
+        cfgRef.mode = (cfgRef.mode == "above") and "below" or "above"
         updateUI()
     end)
 
     valBox.FocusLost:Connect(function()
         local raw = valBox.Text:gsub("[^%d%-]","")
         local num = tonumber(raw)
-        if num then cfg.value = num; valBox.Text = tostring(num)
-        else valBox.Text = tostring(cfg.value) end
+        if num then cfgRef.value = num; valBox.Text = tostring(num)
+        else valBox.Text = tostring(cfgRef.value) end
         updateUI()
     end)
 
@@ -1387,12 +1369,10 @@ local function makeThresholdCard(icon, accentColor, label, cfgKey, layoutOrder)
     return card, cs
 end
 
-local WinsSettingCard,  WinsCS   = makeThresholdCard("🏆", Color3.fromRGB(255,215,0),  "Souvenir WINS",  "wins",  4)
-local SpeedSettingCard, SpeedCS  = makeThresholdCard("⚡",  Color3.fromRGB(80,180,255), "Souvenir SPEED", "speed", 5)
+local WinsSettingCard,  WinsCS  = makeThresholdCard(PanelPushTrophy, "🏆", Color3.fromRGB(255,215,0),  "Souvenir WINS",  CFG.wins,  4)
+local SpeedSettingCard, SpeedCS = makeThresholdCard(PanelPushTrophy, "⚡",  Color3.fromRGB(80,180,255), "Souvenir SPEED", CFG.speed, 5)
 
--- ══════════════════════════════════════════════
--- STATUS CARD Trophy
--- ══════════════════════════════════════════════
+-- ── Status Card Trophy ──
 local StatCard = Instance.new("Frame", PanelPushTrophy)
 StatCard.Size=UDim2.new(1,0,0,72); StatCard.BackgroundColor3=Color3.fromRGB(12,10,22)
 StatCard.BorderSizePixel=0; StatCard.ZIndex=103; StatCard.LayoutOrder=6
@@ -1430,9 +1410,7 @@ togGrad.Color=ColorSequence.new({
     ColorSequenceKeypoint.new(1,Color3.fromRGB(30,140,65)),
 }); togGrad.Rotation=90
 
--- ══════════════════════════════════════════════
--- WINS COUNTER CARD
--- ══════════════════════════════════════════════
+-- ── Wins Counter Card ──
 local CountCard = Instance.new("Frame", PanelPushTrophy)
 CountCard.Size=UDim2.new(1,0,0,62); CountCard.BackgroundColor3=Color3.fromRGB(12,10,20)
 CountCard.BorderSizePixel=0; CountCard.ZIndex=103; CountCard.LayoutOrder=7
@@ -1465,290 +1443,6 @@ Instance.new("UICorner", ResetBtn).CornerRadius = UDim.new(0,8)
 ResetBtn.MouseButton1Click:Connect(function()
     TROPHY_STATE.winsCount=0; PushCountLbl.Text="0"
     showToast("Counter WINS direset ke 0","🔄",Color3.fromRGB(255,215,0))
-end)
-
--- ══════════════════════════════════════════════════════════════
--- [NEW] TABEL AUTO PET
--- Menggunakan deteksi ketinggian seperti Trophy
--- Pet WINS: LEPAS (DownPet) Pet SPEED + PASANG (UpPet) Pet WINS
--- Pet SPEED: LEPAS (DownPet) Pet WINS  + PASANG (UpPet) Pet SPEED
--- ══════════════════════════════════════════════════════════════
-makeSectionHeader(PanelPushTrophy, "Auto Pet", "🐾", 8)
-
--- Height meter untuk Auto Pet
-local PetHeightCard = Instance.new("Frame", PanelPushTrophy)
-PetHeightCard.Size=UDim2.new(1,0,0,80); PetHeightCard.BackgroundColor3=Color3.fromRGB(12,10,22)
-PetHeightCard.BorderSizePixel=0; PetHeightCard.ZIndex=103; PetHeightCard.LayoutOrder=9
-Instance.new("UICorner", PetHeightCard).CornerRadius = UDim.new(0,14)
-local petHcStroke = Instance.new("UIStroke", PetHeightCard)
-petHcStroke.Color=Color3.fromRGB(120,200,255); petHcStroke.Thickness=1.4; petHcStroke.Transparency=0.5
-
-local petHIcon = Instance.new("TextLabel", PetHeightCard)
-petHIcon.Size=UDim2.new(0,38,0,38); petHIcon.Position=UDim2.new(0,14,0.5,-19)
-petHIcon.BackgroundTransparency=1; petHIcon.Text="🐾"; petHIcon.TextSize=22
-petHIcon.Font=Enum.Font.GothamBold; petHIcon.ZIndex=104
-
-local PetHeightValLbl = Instance.new("TextLabel", PetHeightCard)
-PetHeightValLbl.Size=UDim2.new(0.55,0,0,32); PetHeightValLbl.Position=UDim2.new(0,58,0,10)
-PetHeightValLbl.BackgroundTransparency=1; PetHeightValLbl.Text="0 studs"
-PetHeightValLbl.TextColor3=Color3.fromRGB(120,220,255); PetHeightValLbl.TextSize=22
-PetHeightValLbl.Font=Enum.Font.GothamBold; PetHeightValLbl.TextXAlignment=Enum.TextXAlignment.Left; PetHeightValLbl.ZIndex=104
-
-local PetHeightZoneLbl = Instance.new("TextLabel", PetHeightCard)
-PetHeightZoneLbl.Size=UDim2.new(0.42,0,0,22); PetHeightZoneLbl.Position=UDim2.new(0.56,0,0.5,-11)
-PetHeightZoneLbl.BackgroundTransparency=1; PetHeightZoneLbl.Text="〰 NORMAL"
-PetHeightZoneLbl.TextColor3=Color3.fromRGB(160,155,200); PetHeightZoneLbl.TextSize=11
-PetHeightZoneLbl.Font=Enum.Font.GothamBold; PetHeightZoneLbl.TextXAlignment=Enum.TextXAlignment.Right; PetHeightZoneLbl.ZIndex=104
-
-local petHBarBg = Instance.new("Frame", PetHeightCard)
-petHBarBg.Size=UDim2.new(1,-20,0,5); petHBarBg.Position=UDim2.new(0,10,1,-10)
-petHBarBg.BackgroundColor3=Color3.fromRGB(22,20,38); petHBarBg.BorderSizePixel=0; petHBarBg.ZIndex=104
-Instance.new("UICorner", petHBarBg).CornerRadius = UDim.new(1,0)
-
-local petHBarFill = Instance.new("Frame", petHBarBg)
-petHBarFill.Size=UDim2.new(0,0,1,0); petHBarFill.BackgroundColor3=Color3.fromRGB(120,200,255)
-petHBarFill.BorderSizePixel=0; petHBarFill.ZIndex=105
-Instance.new("UICorner", petHBarFill).CornerRadius = UDim.new(1,0)
-
--- ── Threshold Card untuk Auto Pet (reuse pattern makeThresholdCard tapi pakai AUTO_PET_CFG) ──
-local function makeAutoPetThresholdCard(icon, accentColor, label, cfgKey, layoutOrder)
-    local card = Instance.new("Frame", PanelPushTrophy)
-    card.Size=UDim2.new(1,0,0,78); card.BackgroundColor3=Color3.fromRGB(11,9,20)
-    card.BorderSizePixel=0; card.ZIndex=103; card.LayoutOrder=layoutOrder
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0,14)
-    local cs = Instance.new("UIStroke", card)
-    cs.Color=accentColor; cs.Thickness=1.4; cs.Transparency=0.5
-
-    local strip = Instance.new("Frame", card)
-    strip.Size=UDim2.new(0,4,0.7,0); strip.Position=UDim2.new(0,0,0.15,0)
-    strip.BackgroundColor3=accentColor; strip.BorderSizePixel=0
-    Instance.new("UICorner", strip).CornerRadius = UDim.new(1,0)
-
-    local ico = Instance.new("TextLabel", card)
-    ico.Size=UDim2.new(0,36,0,36); ico.Position=UDim2.new(0,12,0,10)
-    ico.BackgroundTransparency=1; ico.Text=icon; ico.TextSize=20
-    ico.Font=Enum.Font.GothamBold; ico.ZIndex=104
-
-    local nameLbl = Instance.new("TextLabel", card)
-    nameLbl.Size=UDim2.new(0.5,0,0,18); nameLbl.Position=UDim2.new(0,54,0,10)
-    nameLbl.BackgroundTransparency=1; nameLbl.Text=label
-    nameLbl.TextColor3=accentColor; nameLbl.TextSize=12
-    nameLbl.Font=Enum.Font.GothamBold; nameLbl.TextXAlignment=Enum.TextXAlignment.Left; nameLbl.ZIndex=104
-
-    local modeFrame = Instance.new("Frame", card)
-    modeFrame.Size=UDim2.new(0,146,0,28); modeFrame.Position=UDim2.new(1,-154,0,8)
-    modeFrame.BackgroundColor3=Color3.fromRGB(20,18,34); modeFrame.BorderSizePixel=0; modeFrame.ZIndex=104
-    Instance.new("UICorner", modeFrame).CornerRadius = UDim.new(0,8)
-
-    local modePill = Instance.new("Frame", modeFrame)
-    modePill.Size=UDim2.new(0.5,0,1,0); modePill.Position=UDim2.new(0,0,0,0)
-    modePill.BackgroundColor3=accentColor; modePill.BackgroundTransparency=0.25
-    modePill.BorderSizePixel=0; modePill.ZIndex=105
-    Instance.new("UICorner", modePill).CornerRadius = UDim.new(0,8)
-
-    local aboveLbl = Instance.new("TextLabel", modeFrame)
-    aboveLbl.Size=UDim2.new(0.5,0,1,0); aboveLbl.Position=UDim2.new(0,0,0,0)
-    aboveLbl.BackgroundTransparency=1; aboveLbl.Text="▲ DIATAS"
-    aboveLbl.TextColor3=Color3.fromRGB(255,255,255); aboveLbl.TextSize=9
-    aboveLbl.Font=Enum.Font.GothamBold; aboveLbl.ZIndex=106
-
-    local belowLbl = Instance.new("TextLabel", modeFrame)
-    belowLbl.Size=UDim2.new(0.5,0,1,0); belowLbl.Position=UDim2.new(0.5,0,0,0)
-    belowLbl.BackgroundTransparency=1; belowLbl.Text="▼ DIBAWAH"
-    belowLbl.TextColor3=Color3.fromRGB(130,120,165); belowLbl.TextSize=9
-    belowLbl.Font=Enum.Font.GothamBold; belowLbl.ZIndex=106
-
-    local modeBtn = Instance.new("TextButton", modeFrame)
-    modeBtn.Size=UDim2.new(1,0,1,0); modeBtn.BackgroundTransparency=1
-    modeBtn.Text=""; modeBtn.ZIndex=107
-
-    local valRow = Instance.new("Frame", card)
-    valRow.Size=UDim2.new(1,-20,0,30); valRow.Position=UDim2.new(0,10,0,42)
-    valRow.BackgroundTransparency=1; valRow.ZIndex=104
-
-    local valBg = Instance.new("Frame", valRow)
-    valBg.Size=UDim2.new(1,0,1,0); valBg.BackgroundColor3=Color3.fromRGB(14,12,26)
-    valBg.BorderSizePixel=0; valBg.ZIndex=104
-    Instance.new("UICorner", valBg).CornerRadius = UDim.new(0,9)
-    local valStroke = Instance.new("UIStroke", valBg)
-    valStroke.Color=accentColor; valStroke.Thickness=1.2; valStroke.Transparency=0.55
-
-    local valPrefix = Instance.new("TextLabel", valBg)
-    valPrefix.Size=UDim2.new(0,28,1,0); valPrefix.Position=UDim2.new(0,6,0,0)
-    valPrefix.BackgroundTransparency=1; valPrefix.Text="📏"
-    valPrefix.TextSize=14; valPrefix.Font=Enum.Font.GothamBold; valPrefix.ZIndex=105
-
-    local valBox = Instance.new("TextBox", valBg)
-    valBox.Size=UDim2.new(1,-36,1,0); valBox.Position=UDim2.new(0,34,0,0)
-    valBox.BackgroundTransparency=1; valBox.Text=tostring(AUTO_PET_CFG[cfgKey].value)
-    valBox.TextColor3=accentColor; valBox.PlaceholderText="Ketik nilai..."
-    valBox.PlaceholderColor3=Color3.fromRGB(80,70,110)
-    valBox.TextSize=14; valBox.Font=Enum.Font.GothamBold
-    valBox.TextXAlignment=Enum.TextXAlignment.Left
-    valBox.ClearTextOnFocus=false; valBox.ZIndex=106
-
-    local cfg = AUTO_PET_CFG[cfgKey]
-
-    local function updateUI()
-        local modeIsAbove = (cfg.mode == "above")
-        TweenService:Create(modePill, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {Position=UDim2.new(modeIsAbove and 0 or 0.5,0,0,0)}):Play()
-        aboveLbl.TextColor3 = modeIsAbove and Color3.fromRGB(255,255,255) or Color3.fromRGB(130,120,165)
-        belowLbl.TextColor3 = modeIsAbove and Color3.fromRGB(130,120,165) or Color3.fromRGB(255,255,255)
-    end
-
-    modeBtn.MouseButton1Click:Connect(function()
-        cfg.mode = (cfg.mode == "above") and "below" or "above"
-        updateUI()
-    end)
-
-    valBox.FocusLost:Connect(function()
-        local raw = valBox.Text:gsub("[^%d%-]","")
-        local num = tonumber(raw)
-        if num then cfg.value = num; valBox.Text = tostring(num)
-        else valBox.Text = tostring(cfg.value) end
-        updateUI()
-    end)
-
-    updateUI()
-    return card, cs
-end
-
--- Card threshold Pet WINS dan Pet SPEED
-local PetWinsCard,  PetWinsCS  = makeAutoPetThresholdCard("🏆", Color3.fromRGB(255,215,0),  "Pet WINS",  "wins",  10)
-local PetSpeedCard, PetSpeedCS = makeAutoPetThresholdCard("⚡",  Color3.fromRGB(80,180,255), "Pet SPEED", "speed", 11)
-
--- ── Status Card Auto Pet ──
-local PetStatCard = Instance.new("Frame", PanelPushTrophy)
-PetStatCard.Size=UDim2.new(1,0,0,72); PetStatCard.BackgroundColor3=Color3.fromRGB(12,10,22)
-PetStatCard.BorderSizePixel=0; PetStatCard.ZIndex=103; PetStatCard.LayoutOrder=12
-Instance.new("UICorner", PetStatCard).CornerRadius = UDim.new(0,14)
-local petScSt = Instance.new("UIStroke", PetStatCard)
-petScSt.Color=Color3.fromRGB(120,200,255); petScSt.Thickness=1.5; petScSt.Transparency=0.55
-
-local PetStatusLbl = Instance.new("TextLabel", PetStatCard)
-PetStatusLbl.Size=UDim2.new(0.52,0,0,22); PetStatusLbl.Position=UDim2.new(0,16,0,10)
-PetStatusLbl.BackgroundTransparency=1; PetStatusLbl.Text="● MATI"
-PetStatusLbl.TextColor3=Color3.fromRGB(255,80,80); PetStatusLbl.TextSize=13
-PetStatusLbl.Font=Enum.Font.GothamBold; PetStatusLbl.TextXAlignment=Enum.TextXAlignment.Left; PetStatusLbl.ZIndex=104
-
-local PetRunLbl = Instance.new("TextLabel", PetStatCard)
-PetRunLbl.Size=UDim2.new(0.52,0,0,16); PetRunLbl.Position=UDim2.new(0,16,0,36)
-PetRunLbl.BackgroundTransparency=1; PetRunLbl.Text="Menunggu diaktifkan..."
-PetRunLbl.TextColor3=Color3.fromRGB(100,96,136); PetRunLbl.TextSize=9
-PetRunLbl.Font=Enum.Font.Gotham; PetRunLbl.TextXAlignment=Enum.TextXAlignment.Left; PetRunLbl.ZIndex=104
-
-local PetModeIconLbl = Instance.new("TextLabel", PetStatCard)
-PetModeIconLbl.Size=UDim2.new(0,32,0,32); PetModeIconLbl.Position=UDim2.new(0.52,0,0.5,-16)
-PetModeIconLbl.BackgroundTransparency=1; PetModeIconLbl.Text="〰"
-PetModeIconLbl.TextSize=18; PetModeIconLbl.Font=Enum.Font.GothamBold
-PetModeIconLbl.TextXAlignment=Enum.TextXAlignment.Center; PetModeIconLbl.ZIndex=104
-
-local PetTogBtn = Instance.new("TextButton", PetStatCard)
-PetTogBtn.Size=UDim2.new(0,106,0,34); PetTogBtn.Position=UDim2.new(1,-114,0.5,-17)
-PetTogBtn.BackgroundColor3=Color3.fromRGB(35,145,70); PetTogBtn.Text="▶ AKTIFKAN"
-PetTogBtn.TextColor3=Color3.fromRGB(255,255,255); PetTogBtn.TextSize=10
-PetTogBtn.Font=Enum.Font.GothamBold; PetTogBtn.BorderSizePixel=0; PetTogBtn.ZIndex=105
-Instance.new("UICorner", PetTogBtn).CornerRadius = UDim.new(0,10)
-local petTogGrad = Instance.new("UIGradient", PetTogBtn)
-petTogGrad.Color=ColorSequence.new({
-    ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,210)),
-    ColorSequenceKeypoint.new(1,Color3.fromRGB(30,120,160)),
-}); petTogGrad.Rotation=90
-
--- ══════════════════════════════════════════════════════════════
--- LOGIC AUTO PET: MODE SWITCH dengan deteksi ketinggian
--- Pet WINS  → LEPAS (DownPet) Pet SPEED + PASANG (UpPet) Pet WINS
--- Pet SPEED → LEPAS (DownPet) Pet WINS  + PASANG (UpPet) Pet SPEED
--- ══════════════════════════════════════════════════════════════
-local function applyAutoPetMode(mode, h)
-    if mode == AUTO_PET_STATE.currentMode then return end
-    AUTO_PET_STATE.currentMode = mode
-
-    if mode == "WINS" then
-        task.spawn(function()
-            -- LEPAS Pet SPEED
-            lepasListPet(PET_SPEED_IDS)
-            -- PASANG Pet WINS
-            pasangListPet(PET_WINS_IDS)
-        end)
-        local sym = AUTO_PET_CFG.wins.mode=="above" and ">" or "<"
-        PetHeightZoneLbl.Text="🏆 WINS ZONE"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(255,215,0)
-        PetModeIconLbl.Text="🏆"
-        PetRunLbl.Text="Pet WINS  Y"..sym..AUTO_PET_CFG.wins.value.."  ["..math.floor(h).."]"
-        PetRunLbl.TextColor3=Color3.fromRGB(255,215,0)
-        petHBarFill.BackgroundColor3=Color3.fromRGB(255,215,0)
-        PetWinsCS.Transparency=0.08; PetSpeedCS.Transparency=0.82
-        showToast("🏆 Auto Pet → WINS Aktif!","🏆",Color3.fromRGB(255,215,0))
-
-    elseif mode == "SPEED" then
-        task.spawn(function()
-            -- LEPAS Pet WINS
-            lepasListPet(PET_WINS_IDS)
-            -- PASANG Pet SPEED
-            pasangListPet(PET_SPEED_IDS)
-        end)
-        local sym = AUTO_PET_CFG.speed.mode=="above" and ">" or "<"
-        PetHeightZoneLbl.Text="⚡ SPEED ZONE"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(80,180,255)
-        PetModeIconLbl.Text="⚡"
-        PetRunLbl.Text="Pet SPEED  Y"..sym..AUTO_PET_CFG.speed.value.."  ["..math.floor(h).."]"
-        PetRunLbl.TextColor3=Color3.fromRGB(80,200,255)
-        petHBarFill.BackgroundColor3=Color3.fromRGB(80,180,255)
-        PetSpeedCS.Transparency=0.08; PetWinsCS.Transparency=0.82
-        showToast("⚡ Auto Pet → SPEED Aktif!","⚡",Color3.fromRGB(80,180,255))
-    else
-        PetHeightZoneLbl.Text="〰 NORMAL"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(130,125,170)
-        PetModeIconLbl.Text="〰"
-        PetRunLbl.Text="Memantau ketinggian..."; PetRunLbl.TextColor3=Color3.fromRGB(100,96,136)
-        PetWinsCS.Transparency=0.5; PetSpeedCS.Transparency=0.5
-    end
-end
-
-local function startAutoPetLoop()
-    AUTO_PET_STATE.running=true; AUTO_PET_STATE.currentMode="IDLE"
-    PetStatusLbl.Text="● AKTIF"; PetStatusLbl.TextColor3=Color3.fromRGB(80,255,130)
-    PetTogBtn.Text="■ MATIKAN"
-    petTogGrad.Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(220,65,65)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(160,35,35)),
-    })
-    showToast("🐾 Auto Pet aktif!","🐾",Color3.fromRGB(80,255,130))
-
-    AUTO_PET_STATE.loop = task.spawn(function()
-        while AUTO_PET_STATE.running do
-            local h = getTrophyHeight()
-            PetHeightValLbl.Text = math.floor(h).." studs"
-            petHBarFill.Size = UDim2.new(math.clamp(h/20000,0,1),0,1,0)
-
-            local targetMode
-            if checkCondition(AUTO_PET_CFG.wins, h) then targetMode = "WINS"
-            elseif checkCondition(AUTO_PET_CFG.speed, h) then targetMode = "SPEED"
-            else targetMode = "IDLE" end
-
-            applyAutoPetMode(targetMode, h)
-            smartDelay(0.5)
-        end
-    end)
-end
-
-local function stopAutoPetLoop()
-    AUTO_PET_STATE.running=false
-    if AUTO_PET_STATE.loop then task.cancel(AUTO_PET_STATE.loop); AUTO_PET_STATE.loop=nil end
-    AUTO_PET_STATE.currentMode="IDLE"
-    PetStatusLbl.Text="● MATI"; PetStatusLbl.TextColor3=Color3.fromRGB(255,80,80)
-    PetTogBtn.Text="▶ AKTIFKAN"
-    petTogGrad.Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,210)),
-        ColorSequenceKeypoint.new(1,Color3.fromRGB(30,120,160)),
-    })
-    PetRunLbl.Text="Menunggu diaktifkan..."; PetRunLbl.TextColor3=Color3.fromRGB(100,96,136)
-    PetModeIconLbl.Text="〰"
-    PetHeightZoneLbl.Text="〰 NORMAL"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(130,125,170)
-    PetWinsCS.Transparency=0.5; PetSpeedCS.Transparency=0.5
-    showToast("⏹ Auto Pet dimatikan","⏹",Color3.fromRGB(255,80,80))
-end
-
-PetTogBtn.MouseButton1Click:Connect(function()
-    if AUTO_PET_STATE.running then stopAutoPetLoop() else startAutoPetLoop() end
 end)
 
 -- ══════════════════════════════════════════════
@@ -1839,34 +1533,245 @@ TrophyTogBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ===================================================
--- TAB SWITCHING
+-- PANEL 3: AUTO PET (panel terpisah, tab tersendiri)
 -- ===================================================
-local activeTab = "hatch"
-local TABS = {
-    hatch      = {panel=PanelHatch,      tab=HtTab, color=Color3.fromRGB(160,80,255)},
-    pushtrophy = {panel=PanelPushTrophy, tab=PtTab, color=Color3.fromRGB(255,215,0)},
+local PanelAutoPet = makePanel()
+
+local AUTO_PET_CFG = {
+    wins  = { value = 12700, mode = "above" },
+    speed = { value = 12700, mode = "below" },
 }
 
-local function switchTab(name)
-    activeTab = name
-    for k, t in pairs(TABS) do
-        t.panel.Visible = (k == name)
-        local active = (k == name)
-        t.tab.indicator.Visible = active
-        if active then
-            t.tab.frame.BackgroundColor3 = Color3.fromRGB(24,20,38)
-            t.tab.stroke.Transparency = 0.25
-            t.tab.nameLbl.TextColor3 = t.tab.accent
-        else
-            t.tab.frame.BackgroundColor3 = Color3.fromRGB(20,17,32)
-            t.tab.stroke.Transparency = 0.88
-            t.tab.nameLbl.TextColor3 = Color3.fromRGB(110,106,144)
-        end
+local AUTO_PET_STATE = {
+    running     = false,
+    currentMode = "IDLE",
+    loop        = nil,
+}
+
+makeSectionHeader(PanelAutoPet, "Auto Pet Switch", "🐾", 0)
+
+-- ── Info Card ──
+local PetInfoCard = Instance.new("Frame", PanelAutoPet)
+PetInfoCard.Size=UDim2.new(1,0,0,52); PetInfoCard.BackgroundColor3=Color3.fromRGB(10,15,22)
+PetInfoCard.BorderSizePixel=0; PetInfoCard.ZIndex=103; PetInfoCard.LayoutOrder=1
+Instance.new("UICorner", PetInfoCard).CornerRadius = UDim.new(0,12)
+local piStroke = Instance.new("UIStroke", PetInfoCard)
+piStroke.Color=Color3.fromRGB(80,200,255); piStroke.Thickness=1.2; piStroke.Transparency=0.55
+
+local piIco = Instance.new("TextLabel", PetInfoCard)
+piIco.Size=UDim2.new(0,34,1,0); piIco.Position=UDim2.new(0,10,0,0)
+piIco.BackgroundTransparency=1; piIco.Text="ℹ️"; piIco.TextSize=16
+piIco.Font=Enum.Font.GothamBold; piIco.ZIndex=104
+
+local piTxt = Instance.new("TextLabel", PetInfoCard)
+piTxt.Size=UDim2.new(1,-50,1,0); piTxt.Position=UDim2.new(0,46,0,0)
+piTxt.BackgroundTransparency=1
+piTxt.Text="Pet WINS/SPEED berganti otomatis\nsesuai ketinggian karakter"
+piTxt.TextColor3=Color3.fromRGB(120,180,220); piTxt.TextSize=9
+piTxt.Font=Enum.Font.Gotham; piTxt.TextXAlignment=Enum.TextXAlignment.Left
+piTxt.TextWrapped=true; piTxt.ZIndex=104
+
+-- ── Height Meter Card Auto Pet ──
+makeSectionHeader(PanelAutoPet, "Monitor Ketinggian", "📡", 2)
+
+local PetHeightCard = Instance.new("Frame", PanelAutoPet)
+PetHeightCard.Size=UDim2.new(1,0,0,80); PetHeightCard.BackgroundColor3=Color3.fromRGB(12,10,22)
+PetHeightCard.BorderSizePixel=0; PetHeightCard.ZIndex=103; PetHeightCard.LayoutOrder=3
+Instance.new("UICorner", PetHeightCard).CornerRadius = UDim.new(0,14)
+local petHcStroke = Instance.new("UIStroke", PetHeightCard)
+petHcStroke.Color=Color3.fromRGB(80,200,255); petHcStroke.Thickness=1.4; petHcStroke.Transparency=0.5
+
+local petHIcon = Instance.new("TextLabel", PetHeightCard)
+petHIcon.Size=UDim2.new(0,38,0,38); petHIcon.Position=UDim2.new(0,14,0.5,-19)
+petHIcon.BackgroundTransparency=1; petHIcon.Text="🐾"; petHIcon.TextSize=22
+petHIcon.Font=Enum.Font.GothamBold; petHIcon.ZIndex=104
+
+local PetHeightValLbl = Instance.new("TextLabel", PetHeightCard)
+PetHeightValLbl.Size=UDim2.new(0.55,0,0,32); PetHeightValLbl.Position=UDim2.new(0,58,0,10)
+PetHeightValLbl.BackgroundTransparency=1; PetHeightValLbl.Text="0 studs"
+PetHeightValLbl.TextColor3=Color3.fromRGB(80,220,255); PetHeightValLbl.TextSize=22
+PetHeightValLbl.Font=Enum.Font.GothamBold; PetHeightValLbl.TextXAlignment=Enum.TextXAlignment.Left; PetHeightValLbl.ZIndex=104
+
+local PetHeightZoneLbl = Instance.new("TextLabel", PetHeightCard)
+PetHeightZoneLbl.Size=UDim2.new(0.42,0,0,22); PetHeightZoneLbl.Position=UDim2.new(0.56,0,0.5,-11)
+PetHeightZoneLbl.BackgroundTransparency=1; PetHeightZoneLbl.Text="〰 NORMAL"
+PetHeightZoneLbl.TextColor3=Color3.fromRGB(160,155,200); PetHeightZoneLbl.TextSize=11
+PetHeightZoneLbl.Font=Enum.Font.GothamBold; PetHeightZoneLbl.TextXAlignment=Enum.TextXAlignment.Right; PetHeightZoneLbl.ZIndex=104
+
+local petHBarBg = Instance.new("Frame", PetHeightCard)
+petHBarBg.Size=UDim2.new(1,-20,0,5); petHBarBg.Position=UDim2.new(0,10,1,-10)
+petHBarBg.BackgroundColor3=Color3.fromRGB(22,20,38); petHBarBg.BorderSizePixel=0; petHBarBg.ZIndex=104
+Instance.new("UICorner", petHBarBg).CornerRadius = UDim.new(1,0)
+
+local petHBarFill = Instance.new("Frame", petHBarBg)
+petHBarFill.Size=UDim2.new(0,0,1,0); petHBarFill.BackgroundColor3=Color3.fromRGB(80,200,255)
+petHBarFill.BorderSizePixel=0; petHBarFill.ZIndex=105
+Instance.new("UICorner", petHBarFill).CornerRadius = UDim.new(1,0)
+
+-- ── Threshold Cards untuk Auto Pet ──
+makeSectionHeader(PanelAutoPet, "Threshold Pet", "⚙️", 4)
+
+local PetWinsCard,  PetWinsCS  = makeThresholdCard(PanelAutoPet, "🏆", Color3.fromRGB(255,215,0),  "Pet WINS",  AUTO_PET_CFG.wins,  5)
+local PetSpeedCard, PetSpeedCS = makeThresholdCard(PanelAutoPet, "⚡",  Color3.fromRGB(80,180,255), "Pet SPEED", AUTO_PET_CFG.speed, 6)
+
+-- ── Status Card Auto Pet ──
+local PetStatCard = Instance.new("Frame", PanelAutoPet)
+PetStatCard.Size=UDim2.new(1,0,0,72); PetStatCard.BackgroundColor3=Color3.fromRGB(12,10,22)
+PetStatCard.BorderSizePixel=0; PetStatCard.ZIndex=103; PetStatCard.LayoutOrder=7
+Instance.new("UICorner", PetStatCard).CornerRadius = UDim.new(0,14)
+local petScSt = Instance.new("UIStroke", PetStatCard)
+petScSt.Color=Color3.fromRGB(80,200,255); petScSt.Thickness=1.5; petScSt.Transparency=0.55
+
+local PetStatusLbl = Instance.new("TextLabel", PetStatCard)
+PetStatusLbl.Size=UDim2.new(0.52,0,0,22); PetStatusLbl.Position=UDim2.new(0,16,0,10)
+PetStatusLbl.BackgroundTransparency=1; PetStatusLbl.Text="● MATI"
+PetStatusLbl.TextColor3=Color3.fromRGB(255,80,80); PetStatusLbl.TextSize=13
+PetStatusLbl.Font=Enum.Font.GothamBold; PetStatusLbl.TextXAlignment=Enum.TextXAlignment.Left; PetStatusLbl.ZIndex=104
+
+local PetRunLbl = Instance.new("TextLabel", PetStatCard)
+PetRunLbl.Size=UDim2.new(0.52,0,0,16); PetRunLbl.Position=UDim2.new(0,16,0,36)
+PetRunLbl.BackgroundTransparency=1; PetRunLbl.Text="Menunggu diaktifkan..."
+PetRunLbl.TextColor3=Color3.fromRGB(100,96,136); PetRunLbl.TextSize=9
+PetRunLbl.Font=Enum.Font.Gotham; PetRunLbl.TextXAlignment=Enum.TextXAlignment.Left; PetRunLbl.ZIndex=104
+
+local PetModeIconLbl = Instance.new("TextLabel", PetStatCard)
+PetModeIconLbl.Size=UDim2.new(0,32,0,32); PetModeIconLbl.Position=UDim2.new(0.52,0,0.5,-16)
+PetModeIconLbl.BackgroundTransparency=1; PetModeIconLbl.Text="〰"
+PetModeIconLbl.TextSize=18; PetModeIconLbl.Font=Enum.Font.GothamBold
+PetModeIconLbl.TextXAlignment=Enum.TextXAlignment.Center; PetModeIconLbl.ZIndex=104
+
+local PetTogBtn = Instance.new("TextButton", PetStatCard)
+PetTogBtn.Size=UDim2.new(0,106,0,34); PetTogBtn.Position=UDim2.new(1,-114,0.5,-17)
+PetTogBtn.BackgroundColor3=Color3.fromRGB(35,145,70); PetTogBtn.Text="▶ AKTIFKAN"
+PetTogBtn.TextColor3=Color3.fromRGB(255,255,255); PetTogBtn.TextSize=10
+PetTogBtn.Font=Enum.Font.GothamBold; PetTogBtn.BorderSizePixel=0; PetTogBtn.ZIndex=105
+Instance.new("UICorner", PetTogBtn).CornerRadius = UDim.new(0,10)
+local petTogGrad = Instance.new("UIGradient", PetTogBtn)
+petTogGrad.Color=ColorSequence.new({
+    ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,210)),
+    ColorSequenceKeypoint.new(1,Color3.fromRGB(30,120,160)),
+}); petTogGrad.Rotation=90
+
+-- ══════════════════════════════════════════════
+-- LOGIC AUTO PET
+-- ══════════════════════════════════════════════
+local function applyAutoPetMode(mode, h)
+    if mode == AUTO_PET_STATE.currentMode then return end
+    AUTO_PET_STATE.currentMode = mode
+
+    if mode == "WINS" then
+        task.spawn(function()
+            lepasListPet(PET_SPEED_IDS)
+            pasangListPet(PET_WINS_IDS)
+        end)
+        local sym = AUTO_PET_CFG.wins.mode=="above" and ">" or "<"
+        PetHeightZoneLbl.Text="🏆 WINS ZONE"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(255,215,0)
+        PetModeIconLbl.Text="🏆"
+        PetRunLbl.Text="Pet WINS  Y"..sym..AUTO_PET_CFG.wins.value.."  ["..math.floor(h).."]"
+        PetRunLbl.TextColor3=Color3.fromRGB(255,215,0)
+        petHBarFill.BackgroundColor3=Color3.fromRGB(255,215,0)
+        PetWinsCS.Transparency=0.08; PetSpeedCS.Transparency=0.82
+        showToast("🏆 Auto Pet → WINS Aktif!","🏆",Color3.fromRGB(255,215,0))
+
+    elseif mode == "SPEED" then
+        task.spawn(function()
+            lepasListPet(PET_WINS_IDS)
+            pasangListPet(PET_SPEED_IDS)
+        end)
+        local sym = AUTO_PET_CFG.speed.mode=="above" and ">" or "<"
+        PetHeightZoneLbl.Text="⚡ SPEED ZONE"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(80,180,255)
+        PetModeIconLbl.Text="⚡"
+        PetRunLbl.Text="Pet SPEED  Y"..sym..AUTO_PET_CFG.speed.value.."  ["..math.floor(h).."]"
+        PetRunLbl.TextColor3=Color3.fromRGB(80,200,255)
+        petHBarFill.BackgroundColor3=Color3.fromRGB(80,180,255)
+        PetSpeedCS.Transparency=0.08; PetWinsCS.Transparency=0.82
+        showToast("⚡ Auto Pet → SPEED Aktif!","⚡",Color3.fromRGB(80,180,255))
+    else
+        PetHeightZoneLbl.Text="〰 NORMAL"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(130,125,170)
+        PetModeIconLbl.Text="〰"
+        PetRunLbl.Text="Memantau ketinggian..."; PetRunLbl.TextColor3=Color3.fromRGB(100,96,136)
+        PetWinsCS.Transparency=0.5; PetSpeedCS.Transparency=0.5
     end
 end
 
-for k, t in pairs(TABS) do
-    t.tab.btn.MouseButton1Click:Connect(function() switchTab(k) end)
+local function startAutoPetLoop()
+    AUTO_PET_STATE.running=true; AUTO_PET_STATE.currentMode="IDLE"
+    PetStatusLbl.Text="● AKTIF"; PetStatusLbl.TextColor3=Color3.fromRGB(80,255,130)
+    PetTogBtn.Text="■ MATIKAN"
+    petTogGrad.Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(220,65,65)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(160,35,35)),
+    })
+    showToast("🐾 Auto Pet aktif!","🐾",Color3.fromRGB(80,255,130))
+
+    AUTO_PET_STATE.loop = task.spawn(function()
+        while AUTO_PET_STATE.running do
+            local h = getTrophyHeight()
+            PetHeightValLbl.Text = math.floor(h).." studs"
+            petHBarFill.Size = UDim2.new(math.clamp(h/20000,0,1),0,1,0)
+
+            local targetMode
+            if checkCondition(AUTO_PET_CFG.wins, h) then targetMode = "WINS"
+            elseif checkCondition(AUTO_PET_CFG.speed, h) then targetMode = "SPEED"
+            else targetMode = "IDLE" end
+
+            applyAutoPetMode(targetMode, h)
+            smartDelay(0.5)
+        end
+    end)
 end
 
-switchTab("hatch")
+local function stopAutoPetLoop()
+    AUTO_PET_STATE.running=false
+    if AUTO_PET_STATE.loop then task.cancel(AUTO_PET_STATE.loop); AUTO_PET_STATE.loop=nil end
+    AUTO_PET_STATE.currentMode="IDLE"
+    PetStatusLbl.Text="● MATI"; PetStatusLbl.TextColor3=Color3.fromRGB(255,80,80)
+    PetTogBtn.Text="▶ AKTIFKAN"
+    petTogGrad.Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,210)),
+        ColorSequenceKeypoint.new(1,Color3.fromRGB(30,120,160)),
+    })
+    PetRunLbl.Text="Menunggu diaktifkan..."; PetRunLbl.TextColor3=Color3.fromRGB(100,96,136)
+    PetModeIconLbl.Text="〰"
+    PetHeightZoneLbl.Text="〰 NORMAL"; PetHeightZoneLbl.TextColor3=Color3.fromRGB(130,125,170)
+    PetWinsCS.Transparency=0.5; PetSpeedCS.Transparency=0.5
+    showToast("⏹ Auto Pet dimatikan","⏹",Color3.fromRGB(255,80,80))
+end
+
+PetTogBtn.MouseButton1Click:Connect(function()
+    if AUTO_PET_STATE.running then stopAutoPetLoop() else startAutoPetLoop() end
+end)
+
+-- ================================================
+-- TAB SWITCH SYSTEM (top navbar)
+-- ================================================
+local allTabs   = {HtTab, PtTab, ApTab}
+local allPanels = {PanelHatch, PanelPushTrophy, PanelAutoPet}
+
+local function switchTab(idx)
+    for i, tab in ipairs(allTabs) do
+        local active = (i == idx)
+        allPanels[i].Visible = active
+
+        tab.indicator.Visible = active
+        tab.frame.BackgroundColor3 = active
+            and Color3.fromRGB(24,20,40)
+            or  Color3.fromRGB(20,17,32)
+        tab.stroke.Transparency = active and 0.25 or 0.88
+        tab.nameLbl.TextColor3 = active
+            and tab.accent
+            or  Color3.fromRGB(110,106,144)
+        tab.icoLbl.TextColor3 = active
+            and Color3.fromRGB(255,255,255)
+            or  Color3.fromRGB(150,140,180)
+    end
+    -- Reset scroll
+    ContentScroll.CanvasPosition = Vector2.zero
+end
+
+HtTab.btn.MouseButton1Click:Connect(function()  switchTab(1) end)
+PtTab.btn.MouseButton1Click:Connect(function()  switchTab(2) end)
+ApTab.btn.MouseButton1Click:Connect(function()  switchTab(3) end)
+
+-- Default ke tab pertama
+switchTab(1)
