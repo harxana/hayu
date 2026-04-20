@@ -922,8 +922,8 @@ end)
 local PanelPushTrophy = makePanel()
 
 local CFG = {
-    wins  = { value = 14000, mode = "above" },
-    speed = { value = 100,   mode = "below" },
+    wins  = { value = 12700, mode = "above" },
+    speed = { value = 12700,   mode = "below" },
 }
 
 local TROPHY_STATE = {
