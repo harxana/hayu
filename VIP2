@@ -1,6 +1,20 @@
 -- ================================================
 -- HAYU Store v4 — Updated Edition
 -- ================================================
+-- Perubahan:
+-- 1. Panel Souvenir (1) DIHAPUS
+-- 2. Panel Super Auto (2) DIHAPUS
+-- 3. Panel Hatch: jeda tiap 3 detik saat ON (safeWait)
+-- 4. Panel Trophy: Tambah Auto Claim Free Gift ON/OFF + jeda 5 menit
+-- 5. Hapus efek berat: kembang api, glitch, ambient spark particle
+-- 6. Smart Delay (Anti Detect)
+-- 7. Anti AFK
+-- 8. Semua loop gunakan safeWait
+-- 9. Anti Reconnect
+-- 10. Low Performance mode
+-- 11. Drag dari seluruh body GUI (bukan hanya titlebar)
+-- 12. Resize 8 arah (N/S/W/E/NW/NE/SW/SE) — tarik tepi/sudut GUI
+-- ================================================
 
 local Players      = game:GetService("Players")
 local LocalPlayer  = Players.LocalPlayer
@@ -369,6 +383,23 @@ local _fStroke = Instance.new("UIStroke", Frame)
 _fStroke.Color = Color3.fromRGB(255,175,0)
 _fStroke.Thickness = 1.5
 
+-- Visual dot di 4 sudut sebagai penanda resize
+local cornerDots = {
+    {ax=0, ay=0}, {ax=1, ay=0}, {ax=0, ay=1}, {ax=1, ay=1}
+}
+for _, cd in ipairs(cornerDots) do
+    local dot = Instance.new("Frame", Frame)
+    dot.Size = UDim2.new(0,7,0,7)
+    dot.AnchorPoint = Vector2.new(cd.ax, cd.ay)
+    dot.Position = UDim2.new(cd.ax,0, cd.ay,0)
+    dot.BackgroundColor3 = Color3.fromRGB(255,175,0)
+    dot.BackgroundTransparency = 0.3
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 201
+    dot.Active = false
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
+end
+
 -- ================================================
 -- TITLE BAR
 -- ================================================
@@ -428,26 +459,205 @@ ShowBtn.MouseButton1Click:Connect(function()
     ShowBtn.Visible = false
 end)
 
+-- ================================================
+-- DRAG: bisa digeser dari MANA SAJA di dalam Frame
+-- (kecuali saat klik tombol / resize handle)
+-- ================================================
 do
-    local dragging, dragStart, startPos = false, Vector2.zero, Frame.Position
-    TitleBar.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = Vector2.new(inp.Position.X, inp.Position.Y)
-            startPos = Frame.Position
-            inp.Changed:Connect(function()
-                if inp.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
+    local dragging   = false
+    local dragStart  = Vector2.zero
+    local startPos   = Frame.Position
+    local DRAG_IGNORE = {} -- diisi oleh tombol-tombol agar tidak konflik
+
+    -- Fungsi ini dipanggil setelah semua tombol dibuat
+    -- agar inputnya tidak memicu drag
+    local function registerDragIgnore(btn)
+        DRAG_IGNORE[btn] = true
+    end
+
+    Frame.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            -- Cegah drag kalau input berasal dari resize zone (pinggir frame)
+            -- kita cek posisi kursor relatif terhadap frame
+            local abs = Frame.AbsolutePosition
+            local sz  = Frame.AbsoluteSize
+            local mx, my = inp.Position.X, inp.Position.Y
+            local margin = 10
+            local onEdge = (mx < abs.X + margin) or (mx > abs.X + sz.X - margin)
+                        or (my < abs.Y + margin) or (my > abs.Y + sz.Y - margin)
+            if onEdge then return end  -- biarkan resize yang handle
+
+            dragging  = true
+            dragStart = Vector2.new(mx, my)
+            startPos  = Frame.Position
         end
     end)
+
     UIS.InputChanged:Connect(function(inp)
-        if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+        if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement
+                      or inp.UserInputType == Enum.UserInputType.Touch) then
             local d = Vector2.new(inp.Position.X, inp.Position.Y) - dragStart
-            Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
+            Frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + d.X,
+                startPos.Y.Scale, startPos.Y.Offset + d.Y
+            )
         end
     end)
+
     UIS.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then dragging = false end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+-- ================================================
+-- RESIZE SYSTEM — 8 handle di tepi & sudut Frame
+-- Ukuran minimum 280×340, maksimum layar penuh
+-- ================================================
+do
+    local MIN_W, MIN_H = 280, 340
+    local HANDLE_SIZE  = 10   -- lebar zona resize (px)
+
+    -- Enum arah resize
+    -- bit: N=1, S=2, W=4, E=8
+    local handles = {
+        {name="N",  x=HANDLE_SIZE, y=0,             w=-2*HANDLE_SIZE, h=HANDLE_SIZE,   dir=1},
+        {name="S",  x=HANDLE_SIZE, y=-HANDLE_SIZE,  w=-2*HANDLE_SIZE, h=HANDLE_SIZE,   dir=2},
+        {name="W",  x=0,           y=HANDLE_SIZE,   w=HANDLE_SIZE,    h=-2*HANDLE_SIZE, dir=4},
+        {name="E",  x=-HANDLE_SIZE,y=HANDLE_SIZE,   w=HANDLE_SIZE,    h=-2*HANDLE_SIZE, dir=8},
+        {name="NW", x=0,           y=0,             w=HANDLE_SIZE,    h=HANDLE_SIZE,   dir=5},
+        {name="NE", x=-HANDLE_SIZE,y=0,             w=HANDLE_SIZE,    h=HANDLE_SIZE,   dir=9},
+        {name="SW", x=0,           y=-HANDLE_SIZE,  w=HANDLE_SIZE,    h=HANDLE_SIZE,   dir=6},
+        {name="SE", x=-HANDLE_SIZE,y=-HANDLE_SIZE,  w=HANDLE_SIZE,    h=HANDLE_SIZE,   dir=10},
+    }
+
+    -- Cursor icon per arah (Roblox enum)
+    local cursorMap = {
+        N  = "rbxasset://SystemCursors/SizeNS",
+        S  = "rbxasset://SystemCursors/SizeNS",
+        W  = "rbxasset://SystemCursors/SizeEW",
+        E  = "rbxasset://SystemCursors/SizeEW",
+        NW = "rbxasset://SystemCursors/SizeNWSE",
+        SE = "rbxasset://SystemCursors/SizeNWSE",
+        NE = "rbxasset://SystemCursors/SizeNESW",
+        SW = "rbxasset://SystemCursors/SizeNESW",
+    }
+
+    local resizing    = false
+    local resizeDir   = 0
+    local resizeStart = Vector2.zero
+    local origPos     = Frame.Position
+    local origSize    = Frame.Size
+
+    for _, h in ipairs(handles) do
+        local hf = Instance.new("TextButton", Frame)
+        -- Posisi: anchor di sudut/tepi yang sesuai
+        -- Gunakan Scale + Offset trick
+        local anchorX = (h.x < 0) and 1 or 0
+        local anchorY = (h.y < 0) and 1 or 0
+        hf.AnchorPoint  = Vector2.new(anchorX, anchorY)
+        hf.Position     = UDim2.new(anchorX, h.x < 0 and 0 or h.x,
+                                     anchorY, h.y < 0 and 0 or h.y)
+        hf.Size         = UDim2.new(0, math.abs(h.w), 0, math.abs(h.h))
+        hf.BackgroundTransparency = 1
+        hf.Text         = ""
+        hf.ZIndex       = 200
+        hf.BorderSizePixel = 0
+        hf.Active       = true
+
+        local dir  = h.dir
+        local name = h.name
+
+        hf.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseButton1
+            or inp.UserInputType == Enum.UserInputType.Touch then
+                resizing    = true
+                resizeDir   = dir
+                resizeStart = Vector2.new(inp.Position.X, inp.Position.Y)
+                origPos     = Frame.Position
+                origSize    = Frame.Size
+            end
+        end)
+
+        hf.MouseEnter:Connect(function()
+            -- Ubah cursor (hanya PC)
+            pcall(function()
+                game:GetService("UserInputService").MouseIcon = cursorMap[name] or ""
+            end)
+        end)
+        hf.MouseLeave:Connect(function()
+            if not resizing then
+                pcall(function()
+                    game:GetService("UserInputService").MouseIcon = ""
+                end)
+            end
+        end)
+    end
+
+    UIS.InputChanged:Connect(function(inp)
+        if not resizing then return end
+        if inp.UserInputType ~= Enum.UserInputType.MouseMovement
+        and inp.UserInputType ~= Enum.UserInputType.Touch then return end
+
+        local vp   = workspace.CurrentCamera.ViewportSize
+        local dx   = inp.Position.X - resizeStart.X
+        local dy   = inp.Position.Y - resizeStart.Y
+
+        local opx  = origPos.X.Offset
+        local opy  = origPos.Y.Offset
+        local osw  = origSize.X.Offset
+        local osh  = origSize.Y.Offset
+
+        local newX, newY, newW, newH = opx, opy, osw, osh
+
+        -- N (atas)
+        if resizeDir == 1 or resizeDir == 5 or resizeDir == 9 then
+            local candidate = osh - dy
+            if candidate >= MIN_H then
+                newH = candidate
+                newY = opy + dy
+            end
+        end
+        -- S (bawah)
+        if resizeDir == 2 or resizeDir == 6 or resizeDir == 10 then
+            newH = math.max(osh + dy, MIN_H)
+        end
+        -- W (kiri)
+        if resizeDir == 4 or resizeDir == 5 or resizeDir == 6 then
+            local candidate = osw - dx
+            if candidate >= MIN_W then
+                newW = candidate
+                newX = opx + dx
+            end
+        end
+        -- E (kanan)
+        if resizeDir == 8 or resizeDir == 9 or resizeDir == 10 then
+            newW = math.max(osw + dx, MIN_W)
+        end
+
+        -- Clamp agar tidak keluar layar
+        newW = math.min(newW, vp.X)
+        newH = math.min(newH, vp.Y)
+        newX = math.clamp(newX, 0, vp.X - newW)
+        newY = math.clamp(newY, 0, vp.Y - newH)
+
+        Frame.Position = UDim2.new(0, newX, 0, newY)
+        Frame.Size     = UDim2.new(0, newW, 0, newH)
+    end)
+
+    UIS.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            if resizing then
+                resizing = false
+                pcall(function()
+                    game:GetService("UserInputService").MouseIcon = ""
+                end)
+            end
+        end
     end)
 end
 
