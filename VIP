@@ -1157,7 +1157,7 @@ local function runHatchLoop()
         fireHatch(7000105, hatchCount)
         totalHatchCount += hatchCount
         TotalHatchLbl.Text = "Total hatch sesi ini: "..totalHatchCount
-        task.wait(math.max(hatchDelay, 0.1))
+        task.wait(math.max(hatchDelay, 3))
     end
     setHatchOFF()
 end
@@ -1279,10 +1279,10 @@ local function startParticles()
     if particleActive then return end
     particleActive = true
     task.spawn(function()
-        while particleActive do ambientSpark(); task.wait(math.random(5,15)/100) end
+        while particleActive do ambientSpark(); task.wait(3) end
     end)
     task.spawn(function()
-        while particleActive do launchFirework(); task.wait(math.random(8,18)/10) end
+        while particleActive do launchFirework(); task.wait(3) end
     end)
 end
 local function stopParticles() particleActive = false end
