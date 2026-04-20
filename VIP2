@@ -1,18 +1,6 @@
 -- ================================================
 -- HAYU Store v4 — Updated Edition
 -- ================================================
--- Perubahan:
--- 1. Panel Souvenir (1) DIHAPUS
--- 2. Panel Super Auto (2) DIHAPUS
--- 3. Panel Hatch: jeda tiap 3 detik saat ON (safeWait)
--- 4. Panel Trophy: Tambah Auto Claim Free Gift ON/OFF + jeda 5 menit
--- 5. Hapus efek berat: kembang api, glitch, ambient spark particle
--- 6. Smart Delay (Anti Detect)
--- 7. Anti AFK
--- 8. Semua loop gunakan safeWait
--- 9. Anti Reconnect
--- 10. Low Performance mode
--- ================================================
 
 local Players      = game:GetService("Players")
 local LocalPlayer  = Players.LocalPlayer
