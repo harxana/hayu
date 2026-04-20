@@ -1277,7 +1277,7 @@ end
 local particleActive = false
 local function startParticles()
     if particleActive then return end
-    particleActive = true
+    particleActive = false
     task.spawn(function()
         while particleActive do ambientSpark(); task.wait(3) end
     end)
