@@ -612,7 +612,7 @@ Instance.new("UICorner",SLBar).CornerRadius=UDim.new(1,0)
 local SLIco=Instance.new("TextLabel",SLCard); SLIco.Size=UDim2.new(0,16,0,16); SLIco.Position=UDim2.new(0,5,0.5,-8)
 SLIco.BackgroundTransparency=1; SLIco.Text="🎰"; SLIco.TextSize=10; SLIco.Font=Enum.Font.GothamBold; SLIco.ZIndex=104
 local SLLbl=Instance.new("TextLabel",SLCard); SLLbl.Size=UDim2.new(1,-24,0,9); SLLbl.Position=UDim2.new(0,22,0,4)
-SLLbl.BackgroundTransparency=1; SLLbl.Text="Souvenir"; SLLbl.TextColor3=Color3.fromRGB(255,165,0)
+SLLbl.BackgroundTransparency=1; SLLbl.Text="Souvenir Luck"; SLLbl.TextColor3=Color3.fromRGB(255,165,0)
 SLLbl.TextSize=7; SLLbl.Font=Enum.Font.GothamBold; SLLbl.TextXAlignment=Enum.TextXAlignment.Left; SLLbl.ZIndex=104
 local SLTogBtn=Instance.new("TextButton",SLCard); SLTogBtn.Size=UDim2.new(1,-8,0,14); SLTogBtn.Position=UDim2.new(0,4,1,-18)
 SLTogBtn.BackgroundColor3=Color3.fromRGB(50,48,70); SLTogBtn.Text="LUCK OFF"
