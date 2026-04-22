@@ -998,7 +998,7 @@ end)
 -- ===================================================
 local PanelAutoPet=makePanel()
 
-local AUTO_PET_CFG={wins={value=12700,mode="above"},speed={value=12700,mode="below"}}
+local AUTO_PET_CFG={wins={value=12000,mode="above"},speed={value=12700,mode="below"}}
 local AUTO_PET_STATE={running=false,currentMode="IDLE",loop=nil}
 
 makeSectionHeader(PanelAutoPet,"Monitor Ketinggian","📡",0)
