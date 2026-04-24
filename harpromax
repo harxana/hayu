@@ -718,7 +718,7 @@ local function runHatchLoop()
     totalHatchCount=0
     while hatchAktif do
         HatchRunLbl.Text="Hatching x"..hatchCount.."..."
-        pcall(function() fireHatch(7000105,hatchCount) end)
+        pcall(function() fireHatch(7000108,hatchCount) end)
         totalHatchCount+=hatchCount; TotalHatchLbl.Text="Total hatch sesi ini: "..totalHatchCount
         smartDelay(hatchDelay)
     end
