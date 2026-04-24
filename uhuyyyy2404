@@ -166,7 +166,7 @@ safeWait(3.7)
 -- STATE
 -- ================================================
 local hatchAktif = false
-local hatchDelay = 3
+local hatchDelay = 1
 local hatchCount = 10
 
 -- ================================================
