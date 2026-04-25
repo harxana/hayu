@@ -184,7 +184,7 @@ local function fireSouvenirLuck()  RS:WaitForChild("Msg"):WaitForChild("RemoteEv
 
 local PET_WINS_IDS  = {7031,12407,12538,12669,12387,9074,12339,15146}
 local PET_SPEED_IDS = {8930,33418,8737,11091,63565,7487,56843,26526}
-local PET_LUCK_IDS  = {} -- diisi dari panel Auto Pet saat Hatch aktif
+local PET_LUCK_IDS  = {90681,153675,156062,215100,94529,91541,92154,216021}
 local PET_BEST_IDS  = {275031,17415,98652,281250,160926,62007,306078,205298}
 
 local function downPet(id) RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("DownPet",id) end
