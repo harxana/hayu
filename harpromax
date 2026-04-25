@@ -1,15 +1,11 @@
 -- ================================================
--- HAYU Store v4 — Mobile Edition (Updated)
+-- HAYU Store v5 — Mobile Edition
 -- ================================================
--- Update:
--- * Whitelist: hanya username "harpromax"
--- * Auto Claim jeda 30 detik setelah satu putaran
--- * Card Studs + Total Wins digabung (kiri=studs, kanan=wins)
--- * Hapus info card "Auto Pet Switch"
--- * Hapus toast notif Trophy & AutoPet (notif hanya saat cek akses)
--- * Tambah Pet BEST IDs
--- * Auto Hatch: lepas WINS+SPEED+BEST, pasang LUCK
--- * Push Trophy: tambah tombol Pet Trophy (1x klik)
+-- Update v5:
+-- * Panel Auto Claim dipisah jadi tab tersendiri (tab ke-4)
+-- * Push Trophy: Auto Claim dihapus, Pet Trophy tetap ada
+-- * Resize manual: tombol +/- (W dan H) + drag tepi/sudut
+-- * 4 Tab: Hatch | Trophy | Auto Pet | Claim
 -- ================================================
 
 local Players      = game:GetService("Players")
@@ -71,14 +67,14 @@ task.spawn(function()
 end)
 
 -- ================================================
--- WHITELIST — satu username saja
+-- WHITELIST
 -- ================================================
 local function isWhitelisted()
     return LocalPlayer.Name == "harpromax"
 end
 
 -- ================================================
--- NOTIFIKASI AKSES (hanya muncul saat cek whitelist)
+-- NOTIFIKASI AKSES
 -- ================================================
 local function showNotif(success)
     local nGui = Instance.new("ScreenGui")
@@ -134,7 +130,7 @@ local function showNotif(success)
         iconCirc.BackgroundColor3 = Color3.fromRGB(40,200,100)
         iconLbl.Text = "✔"; iconLbl.TextColor3 = Color3.fromRGB(180,255,210)
         titleLbl.Text = "Akses Diberikan!"; titleLbl.TextColor3 = Color3.fromRGB(80,255,140)
-        subLbl.Text = "Selamat datang di HAYU Store v4"; subLbl.TextColor3 = Color3.fromRGB(120,200,160)
+        subLbl.Text = "Selamat datang di HAYU Store v5"; subLbl.TextColor3 = Color3.fromRGB(120,200,160)
         userLbl.TextColor3 = Color3.fromRGB(80,220,130)
         cStroke.Color = Color3.fromRGB(60,220,110); barFill.BackgroundColor3 = Color3.fromRGB(60,220,110)
     else
@@ -168,9 +164,17 @@ safeWait(3.7)
 -- ================================================
 -- STATE
 -- ================================================
-local hatchAktif = false
-local hatchDelay = 3
-local hatchCount = 10
+local hatchAktif  = false
+local hatchDelay  = 3
+local hatchCount  = 10
+
+-- Ukuran frame (bisa diubah resize)
+local FRAME_W = 340
+local FRAME_H = 440
+local MIN_W   = 220
+local MIN_H   = 300
+local MAX_W   = 560
+local MAX_H   = 700
 
 -- ================================================
 -- REMOTES
@@ -196,7 +200,7 @@ local function pasangListPet(t) for _,id in ipairs(t) do pcall(function() upPet(
 -- SCREEN GUI
 -- ================================================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HayuStoreV4"; ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "HayuStoreV5"; ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder = 999; ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
@@ -232,14 +236,18 @@ do
     end)
 end
 
--- MAIN FRAME 320x420
+-- ================================================
+-- MAIN FRAME
+-- ================================================
 local Frame = Instance.new("Frame",ScreenGui)
-Frame.Size=UDim2.new(0,320,0,420); Frame.Position=UDim2.new(0.5,-160,0.5,-210)
-Frame.BackgroundColor3=Color3.fromRGB(10,9,18); Frame.BorderSizePixel=0
-Frame.Active=true; Frame.ZIndex=100; Frame.ClipsDescendants=true
-Instance.new("UICorner",Frame).CornerRadius=UDim.new(0,14)
-local _fS=Instance.new("UIStroke",Frame); _fS.Color=Color3.fromRGB(255,175,0); _fS.Thickness=1.5
+Frame.Size = UDim2.new(0,FRAME_W,0,FRAME_H)
+Frame.Position = UDim2.new(0.5,-FRAME_W/2,0.5,-FRAME_H/2)
+Frame.BackgroundColor3 = Color3.fromRGB(10,9,18)
+Frame.BorderSizePixel = 0; Frame.Active = true; Frame.ZIndex = 100; Frame.ClipsDescendants = true
+Instance.new("UICorner",Frame).CornerRadius = UDim.new(0,14)
+local _fS = Instance.new("UIStroke",Frame); _fS.Color=Color3.fromRGB(255,175,0); _fS.Thickness=1.5
 
+-- Corner dots deco
 for _,cd in ipairs({{ax=0,ay=0},{ax=1,ay=0},{ax=0,ay=1},{ax=1,ay=1}}) do
     local dot=Instance.new("Frame",Frame); dot.Size=UDim2.new(0,6,0,6)
     dot.AnchorPoint=Vector2.new(cd.ax,cd.ay); dot.Position=UDim2.new(cd.ax,0,cd.ay,0)
@@ -248,19 +256,21 @@ for _,cd in ipairs({{ax=0,ay=0},{ax=1,ay=0},{ax=0,ay=1},{ax=1,ay=1}}) do
     Instance.new("UICorner",dot).CornerRadius=UDim.new(1,0)
 end
 
+-- ================================================
 -- TITLE BAR
-local TitleBar=Instance.new("Frame",Frame)
-TitleBar.Size=UDim2.new(1,0,0,36); TitleBar.BackgroundColor3=Color3.fromRGB(18,14,30)
-TitleBar.BorderSizePixel=0; TitleBar.ZIndex=110; TitleBar.Active=true
+-- ================================================
+local TitleBar = Instance.new("Frame",Frame)
+TitleBar.Size = UDim2.new(1,0,0,36); TitleBar.BackgroundColor3 = Color3.fromRGB(18,14,30)
+TitleBar.BorderSizePixel = 0; TitleBar.ZIndex = 110; TitleBar.Active = true
 
-local LogoIco=Instance.new("TextLabel",TitleBar)
+local LogoIco = Instance.new("TextLabel",TitleBar)
 LogoIco.Size=UDim2.new(0,26,0,26); LogoIco.Position=UDim2.new(0,8,0.5,-13)
 LogoIco.BackgroundTransparency=1; LogoIco.Text="🔥"; LogoIco.TextSize=15
 LogoIco.Font=Enum.Font.GothamBold; LogoIco.ZIndex=113
 
-local TitleLbl=Instance.new("TextLabel",TitleBar)
+local TitleLbl = Instance.new("TextLabel",TitleBar)
 TitleLbl.Size=UDim2.new(0,120,1,0); TitleLbl.Position=UDim2.new(0,38,0,0)
-TitleLbl.BackgroundTransparency=1; TitleLbl.Text="HAYU Store v4"
+TitleLbl.BackgroundTransparency=1; TitleLbl.Text="HAYU Store v5"
 TitleLbl.TextColor3=Color3.fromRGB(255,200,50); TitleLbl.TextSize=11
 TitleLbl.Font=Enum.Font.GothamBold; TitleLbl.TextXAlignment=Enum.TextXAlignment.Left; TitleLbl.ZIndex=111
 
@@ -272,21 +282,18 @@ local function makeWinBtn(color,sym,xOff)
     Instance.new("UICorner",b).CornerRadius=UDim.new(1,0)
     return b
 end
-local MinBtn=makeWinBtn(Color3.fromRGB(255,190,50),"−",-54)
-local CloseBtn=makeWinBtn(Color3.fromRGB(220,55,55),"✕",-28)
+local MinBtn   = makeWinBtn(Color3.fromRGB(255,190,50),"−",-54)
+local CloseBtn = makeWinBtn(Color3.fromRGB(220,55,55),"✕",-28)
 MinBtn.MouseButton1Click:Connect(function() Frame.Visible=false; ShowBtn.Visible=true end)
 CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 ShowBtn.MouseButton1Click:Connect(function() Frame.Visible=true; ShowBtn.Visible=false end)
 
--- DRAG
+-- DRAG TITLE BAR
 do
     local drag=false; local ds=Vector2.zero; local sp=Frame.Position
-    Frame.InputBegan:Connect(function(inp)
+    TitleBar.InputBegan:Connect(function(inp)
         if inp.UserInputType==Enum.UserInputType.MouseButton1 or inp.UserInputType==Enum.UserInputType.Touch then
-            local abs=Frame.AbsolutePosition; local sz=Frame.AbsoluteSize
-            local mx,my=inp.Position.X,inp.Position.Y; local m=8
-            if mx<abs.X+m or mx>abs.X+sz.X-m or my<abs.Y+m or my>abs.Y+sz.Y-m then return end
-            drag=true; ds=Vector2.new(mx,my); sp=Frame.Position
+            drag=true; ds=Vector2.new(inp.Position.X,inp.Position.Y); sp=Frame.Position
         end
     end)
     UIS.InputChanged:Connect(function(inp)
@@ -300,70 +307,184 @@ do
     end)
 end
 
--- RESIZE
+-- ================================================
+-- RESIZE: TOMBOL +/- (MANUAL W dan H)
+-- ================================================
+-- Bar resize tombol di bawah TitleBar
+local ResizeBar = Instance.new("Frame",Frame)
+ResizeBar.Size = UDim2.new(1,0,0,26)
+ResizeBar.Position = UDim2.new(0,0,0,36)
+ResizeBar.BackgroundColor3 = Color3.fromRGB(14,12,24)
+ResizeBar.BorderSizePixel = 0; ResizeBar.ZIndex = 115
+
+local rbLine = Instance.new("Frame",ResizeBar)
+rbLine.Size=UDim2.new(1,0,0,1); rbLine.Position=UDim2.new(0,0,1,-1)
+rbLine.BackgroundColor3=Color3.fromRGB(255,175,0); rbLine.BackgroundTransparency=0.82
+rbLine.BorderSizePixel=0; rbLine.ZIndex=116
+
+local function makeRSBtn(txt, xPos, color)
+    local b = Instance.new("TextButton", ResizeBar)
+    b.Size = UDim2.new(0,20,0,18)
+    b.Position = UDim2.new(0, xPos, 0.5, -9)
+    b.BackgroundColor3 = color; b.Text = txt
+    b.TextColor3 = Color3.fromRGB(255,255,255); b.TextSize = 10
+    b.Font = Enum.Font.GothamBold; b.BorderSizePixel = 0; b.ZIndex = 116
+    Instance.new("UICorner",b).CornerRadius = UDim.new(0,5)
+    return b
+end
+
+local RsWLbl = Instance.new("TextLabel", ResizeBar)
+RsWLbl.Size=UDim2.new(0,32,1,0); RsWLbl.Position=UDim2.new(0,6,0,0)
+RsWLbl.BackgroundTransparency=1; RsWLbl.Text="W:"
+RsWLbl.TextColor3=Color3.fromRGB(180,160,80); RsWLbl.TextSize=8
+RsWLbl.Font=Enum.Font.GothamBold; RsWLbl.TextXAlignment=Enum.TextXAlignment.Left; RsWLbl.ZIndex=116
+
+local RsWMinus = makeRSBtn("−", 28, Color3.fromRGB(120,40,40))
+local RsWDisp  = Instance.new("TextLabel", ResizeBar)
+RsWDisp.Size=UDim2.new(0,36,0,18); RsWDisp.Position=UDim2.new(0,52,0.5,-9)
+RsWDisp.BackgroundColor3=Color3.fromRGB(12,10,20); RsWDisp.BorderSizePixel=0
+RsWDisp.Text=tostring(FRAME_W); RsWDisp.TextColor3=Color3.fromRGB(255,215,80)
+RsWDisp.TextSize=8; RsWDisp.Font=Enum.Font.GothamBold; RsWDisp.ZIndex=116
+Instance.new("UICorner",RsWDisp).CornerRadius=UDim.new(0,4)
+local RsWPlus  = makeRSBtn("+", 92, Color3.fromRGB(30,120,60))
+
+local divRS = Instance.new("Frame",ResizeBar)
+divRS.Size=UDim2.new(0,1,0.6,0); divRS.Position=UDim2.new(0,116,0.2,0)
+divRS.BackgroundColor3=Color3.fromRGB(80,75,120); divRS.BorderSizePixel=0; divRS.ZIndex=116
+
+local RsHLbl = Instance.new("TextLabel", ResizeBar)
+RsHLbl.Size=UDim2.new(0,28,1,0); RsHLbl.Position=UDim2.new(0,122,0,0)
+RsHLbl.BackgroundTransparency=1; RsHLbl.Text="H:"
+RsHLbl.TextColor3=Color3.fromRGB(100,170,200); RsHLbl.TextSize=8
+RsHLbl.Font=Enum.Font.GothamBold; RsHLbl.TextXAlignment=Enum.TextXAlignment.Left; RsHLbl.ZIndex=116
+
+local RsHMinus = makeRSBtn("−", 142, Color3.fromRGB(120,40,40))
+local RsHDisp  = Instance.new("TextLabel", ResizeBar)
+RsHDisp.Size=UDim2.new(0,36,0,18); RsHDisp.Position=UDim2.new(0,166,0.5,-9)
+RsHDisp.BackgroundColor3=Color3.fromRGB(12,10,20); RsHDisp.BorderSizePixel=0
+RsHDisp.Text=tostring(FRAME_H); RsHDisp.TextColor3=Color3.fromRGB(80,200,255)
+RsHDisp.TextSize=8; RsHDisp.Font=Enum.Font.GothamBold; RsHDisp.ZIndex=116
+Instance.new("UICorner",RsHDisp).CornerRadius=UDim.new(0,4)
+local RsHPlus  = makeRSBtn("+", 206, Color3.fromRGB(30,120,60))
+
+-- Label info resize drag
+local RsDragHint = Instance.new("TextLabel",ResizeBar)
+RsDragHint.Size=UDim2.new(0,100,1,0); RsDragHint.Position=UDim2.new(1,-104,0,0)
+RsDragHint.BackgroundTransparency=1; RsDragHint.Text="↔ Drag tepi/sudut"
+RsDragHint.TextColor3=Color3.fromRGB(80,75,110); RsDragHint.TextSize=7
+RsDragHint.Font=Enum.Font.Gotham; RsDragHint.TextXAlignment=Enum.TextXAlignment.Right; RsDragHint.ZIndex=116
+
+local STEP_W = 20
+local STEP_H = 20
+
+local function applySize(nw, nh)
+    nw = math.clamp(nw, MIN_W, MAX_W)
+    nh = math.clamp(nh, MIN_H, MAX_H)
+    FRAME_W = nw; FRAME_H = nh
+    Frame.Size = UDim2.new(0, nw, 0, nh)
+    RsWDisp.Text = tostring(nw)
+    RsHDisp.Text = tostring(nh)
+end
+
+RsWMinus.MouseButton1Click:Connect(function() applySize(FRAME_W - STEP_W, FRAME_H) end)
+RsWPlus.MouseButton1Click:Connect(function()  applySize(FRAME_W + STEP_W, FRAME_H) end)
+RsHMinus.MouseButton1Click:Connect(function() applySize(FRAME_W, FRAME_H - STEP_H) end)
+RsHPlus.MouseButton1Click:Connect(function()  applySize(FRAME_W, FRAME_H + STEP_H) end)
+
+-- ================================================
+-- RESIZE: DRAG TEPI DAN SUDUT
+-- ================================================
 do
-    local MW,MH=220,300; local HS=8
-    local handles={
-        {x=HS,y=0,w=-2*HS,h=HS,dir=1},{x=HS,y=-HS,w=-2*HS,h=HS,dir=2},
-        {x=0,y=HS,w=HS,h=-2*HS,dir=4},{x=-HS,y=HS,w=HS,h=-2*HS,dir=8},
-        {x=0,y=0,w=HS,h=HS,dir=5},{x=-HS,y=0,w=HS,h=HS,dir=9},
-        {x=0,y=-HS,w=HS,h=HS,dir=6},{x=-HS,y=-HS,w=HS,h=HS,dir=10},
+    local HS = 10
+    -- dir: 1=atas, 2=bawah, 4=kiri, 8=kanan, combo=sudut
+    local handles = {
+        {x=HS,y=0,    w=-2*HS,h=HS,   dir=1},   -- atas
+        {x=HS,y=-HS,  w=-2*HS,h=HS,   dir=2},   -- bawah
+        {x=0, y=HS,   w=HS,   h=-2*HS,dir=4},   -- kiri
+        {x=-HS,y=HS,  w=HS,   h=-2*HS,dir=8},   -- kanan
+        {x=0, y=0,    w=HS,   h=HS,   dir=5},   -- sudut kiri-atas
+        {x=-HS,y=0,   w=HS,   h=HS,   dir=9},   -- sudut kanan-atas
+        {x=0, y=-HS,  w=HS,   h=HS,   dir=6},   -- sudut kiri-bawah
+        {x=-HS,y=-HS, w=HS,   h=HS,   dir=10},  -- sudut kanan-bawah
     }
-    local resizing=false; local rd=0; local rs=Vector2.zero; local op=Frame.Position; local os=Frame.Size
+    local resizing=false; local rd=0
+    local rs=Vector2.zero; local op=Frame.Position; local os=Frame.Size
+
     for _,h in ipairs(handles) do
-        local hf=Instance.new("TextButton",Frame)
-        local aX=(h.x<0) and 1 or 0; local aY=(h.y<0) and 1 or 0
-        hf.AnchorPoint=Vector2.new(aX,aY)
-        hf.Position=UDim2.new(aX,h.x<0 and 0 or h.x,aY,h.y<0 and 0 or h.y)
-        hf.Size=UDim2.new(0,math.abs(h.w),0,math.abs(h.h))
-        hf.BackgroundTransparency=1; hf.Text=""; hf.ZIndex=200; hf.BorderSizePixel=0; hf.Active=true
-        local dir=h.dir
+        local hf = Instance.new("TextButton",Frame)
+        local aX = (h.x < 0) and 1 or 0
+        local aY = (h.y < 0) and 1 or 0
+        hf.AnchorPoint = Vector2.new(aX,aY)
+        hf.Position = UDim2.new(aX, h.x<0 and 0 or h.x, aY, h.y<0 and 0 or h.y)
+        hf.Size = UDim2.new(0, math.abs(h.w), 0, math.abs(h.h))
+        hf.BackgroundTransparency = 1; hf.Text = ""
+        hf.ZIndex = 200; hf.BorderSizePixel = 0; hf.Active = true
+        local dir = h.dir
         hf.InputBegan:Connect(function(inp)
             if inp.UserInputType==Enum.UserInputType.MouseButton1 or inp.UserInputType==Enum.UserInputType.Touch then
-                resizing=true; rd=dir; rs=Vector2.new(inp.Position.X,inp.Position.Y)
+                resizing=true; rd=dir
+                rs=Vector2.new(inp.Position.X,inp.Position.Y)
                 op=Frame.Position; os=Frame.Size
             end
         end)
     end
+
     UIS.InputChanged:Connect(function(inp)
         if not resizing then return end
         if inp.UserInputType~=Enum.UserInputType.MouseMovement and inp.UserInputType~=Enum.UserInputType.Touch then return end
-        local vp=workspace.CurrentCamera.ViewportSize
-        local dx=inp.Position.X-rs.X; local dy=inp.Position.Y-rs.Y
-        local px,py,pw,ph=op.X.Offset,op.Y.Offset,os.X.Offset,os.Y.Offset
-        local nx,ny,nw,nh=px,py,pw,ph
-        if rd==1 or rd==5 or rd==9 then local c=ph-dy; if c>=MH then nh=c; ny=py+dy end end
-        if rd==2 or rd==6 or rd==10 then nh=math.max(ph+dy,MH) end
-        if rd==4 or rd==5 or rd==6 then local c=pw-dx; if c>=MW then nw=c; nx=px+dx end end
-        if rd==8 or rd==9 or rd==10 then nw=math.max(pw+dx,MW) end
-        nw=math.min(nw,vp.X); nh=math.min(nh,vp.Y)
-        nx=math.clamp(nx,0,vp.X-nw); ny=math.clamp(ny,0,vp.Y-nh)
-        Frame.Position=UDim2.new(0,nx,0,ny); Frame.Size=UDim2.new(0,nw,0,nh)
+        local vp = workspace.CurrentCamera.ViewportSize
+        local dx = inp.Position.X - rs.X
+        local dy = inp.Position.Y - rs.Y
+        local px,py,pw,ph = op.X.Offset,op.Y.Offset,os.X.Offset,os.Y.Offset
+        local nx,ny,nw,nh = px,py,pw,ph
+        if rd==1 or rd==5 or rd==9 then
+            local c = ph - dy; if c >= MIN_H then nh=c; ny=py+dy end
+        end
+        if rd==2 or rd==6 or rd==10 then nh = math.max(ph+dy, MIN_H) end
+        if rd==4 or rd==5 or rd==6 then
+            local c = pw - dx; if c >= MIN_W then nw=c; nx=px+dx end
+        end
+        if rd==8 or rd==9 or rd==10 then nw = math.max(pw+dx, MIN_W) end
+        nw = math.min(nw, MAX_W); nh = math.min(nh, MAX_H)
+        nx = math.clamp(nx,0,vp.X-nw); ny = math.clamp(ny,0,vp.Y-nh)
+        FRAME_W = nw; FRAME_H = nh
+        RsWDisp.Text = tostring(math.floor(nw))
+        RsHDisp.Text = tostring(math.floor(nh))
+        Frame.Position = UDim2.new(0,nx,0,ny)
+        Frame.Size     = UDim2.new(0,nw,0,nh)
     end)
     UIS.InputEnded:Connect(function(inp)
         if inp.UserInputType==Enum.UserInputType.MouseButton1 or inp.UserInputType==Enum.UserInputType.Touch then
-            resizing=false
+            resizing = false
         end
     end)
 end
 
--- BODY
-local BodyFrame=Instance.new("Frame",Frame)
-BodyFrame.Size=UDim2.new(1,0,1,-36); BodyFrame.Position=UDim2.new(0,0,0,36)
-BodyFrame.BackgroundTransparency=1; BodyFrame.ZIndex=101
+-- ================================================
+-- BODY  (mulai di bawah TitleBar 36 + ResizeBar 26 = Y62)
+-- ================================================
+local BODY_TOP = 62  -- 36 TitleBar + 26 ResizeBar
 
--- NAVBAR
-local NavBar=Instance.new("Frame",BodyFrame)
-NavBar.Size=UDim2.new(1,0,0,32); NavBar.BackgroundColor3=Color3.fromRGB(13,11,22)
-NavBar.BorderSizePixel=0; NavBar.ZIndex=105
+local BodyFrame = Instance.new("Frame",Frame)
+BodyFrame.Size = UDim2.new(1,0,1,-BODY_TOP)
+BodyFrame.Position = UDim2.new(0,0,0,BODY_TOP)
+BodyFrame.BackgroundTransparency = 1; BodyFrame.ZIndex = 101
 
-local NavLine=Instance.new("Frame",NavBar)
+-- ================================================
+-- NAVBAR — 4 TAB: Hatch | Trophy | Auto Pet | Claim
+-- ================================================
+local NavBar = Instance.new("Frame",BodyFrame)
+NavBar.Size = UDim2.new(1,0,0,32)
+NavBar.BackgroundColor3 = Color3.fromRGB(13,11,22)
+NavBar.BorderSizePixel = 0; NavBar.ZIndex = 105
+
+local NavLine = Instance.new("Frame",NavBar)
 NavLine.Size=UDim2.new(1,0,0,1); NavLine.Position=UDim2.new(0,0,1,-1)
 NavLine.BackgroundColor3=Color3.fromRGB(255,175,0); NavLine.BackgroundTransparency=0.75
 NavLine.BorderSizePixel=0; NavLine.ZIndex=106
 
-local function makeTopTab(icon,label,xPos,width,accent)
-    local con=Instance.new("Frame",NavBar)
+local function makeTopTab(icon, label, xPos, width, accent)
+    local con = Instance.new("Frame",NavBar)
     con.Size=UDim2.new(0,width,0,28); con.Position=UDim2.new(0,xPos,0,2)
     con.BackgroundColor3=Color3.fromRGB(20,17,32); con.BorderSizePixel=0; con.ZIndex=106
     Instance.new("UICorner",con).CornerRadius=UDim.new(0,7)
@@ -374,30 +495,35 @@ local function makeTopTab(icon,label,xPos,width,accent)
     bar.BackgroundColor3=accent; bar.BorderSizePixel=0; bar.Visible=false
     Instance.new("UICorner",bar).CornerRadius=UDim.new(1,0)
     local ico=Instance.new("TextLabel",con)
-    ico.Size=UDim2.new(0,18,1,0); ico.Position=UDim2.new(0,5,0,0)
-    ico.BackgroundTransparency=1; ico.Text=icon; ico.TextSize=12
+    ico.Size=UDim2.new(0,18,1,0); ico.Position=UDim2.new(0,4,0,0)
+    ico.BackgroundTransparency=1; ico.Text=icon; ico.TextSize=11
     ico.Font=Enum.Font.GothamBold; ico.ZIndex=107
     local lbl=Instance.new("TextLabel",con)
-    lbl.Size=UDim2.new(1,-24,1,0); lbl.Position=UDim2.new(0,22,0,0)
+    lbl.Size=UDim2.new(1,-22,1,0); lbl.Position=UDim2.new(0,20,0,0)
     lbl.BackgroundTransparency=1; lbl.Text=label
-    lbl.TextColor3=Color3.fromRGB(110,106,144); lbl.TextSize=8
+    lbl.TextColor3=Color3.fromRGB(110,106,144); lbl.TextSize=7
     lbl.Font=Enum.Font.GothamBold; lbl.TextXAlignment=Enum.TextXAlignment.Left; lbl.ZIndex=107
     local btn=Instance.new("TextButton",con)
     btn.Size=UDim2.new(1,0,1,0); btn.BackgroundTransparency=1; btn.Text=""; btn.ZIndex=108
     return {frame=con,indicator=bar,nameLbl=lbl,btn=btn,stroke=stroke,accent=accent,icoLbl=ico}
 end
 
-local TW=98; local TG=4; local TX=5
-local HtTab=makeTopTab("🥚","Hatch",  TX,           TW, Color3.fromRGB(160,80,255))
-local PtTab=makeTopTab("🏆","Trophy", TX+(TW+TG),   TW, Color3.fromRGB(255,215,0))
-local ApTab=makeTopTab("🐾","Auto Pet",TX+(TW+TG)*2, TW, Color3.fromRGB(80,200,255))
+-- 4 tab, lebar tiap tab = (total-gap*5)/4, margin 4px
+local TW = 74; local TG = 3; local TX = 4
+local HtTab  = makeTopTab("🥚","Hatch",    TX,              TW, Color3.fromRGB(160,80,255))
+local PtTab  = makeTopTab("🏆","Trophy",   TX+(TW+TG),      TW, Color3.fromRGB(255,215,0))
+local ApTab  = makeTopTab("🐾","Auto Pet", TX+(TW+TG)*2,    TW, Color3.fromRGB(80,200,255))
+local ClTab  = makeTopTab("🎁","Claim",    TX+(TW+TG)*3,    TW, Color3.fromRGB(80,220,130))
 
+-- ================================================
 -- CONTENT
-local ContentArea=Instance.new("Frame",BodyFrame)
-ContentArea.Size=UDim2.new(1,-4,1,-34); ContentArea.Position=UDim2.new(0,2,0,33)
+-- ================================================
+local ContentArea = Instance.new("Frame",BodyFrame)
+ContentArea.Size=UDim2.new(1,-4,1,-34)
+ContentArea.Position=UDim2.new(0,2,0,33)
 ContentArea.BackgroundTransparency=1; ContentArea.ZIndex=102
 
-local ContentScroll=Instance.new("ScrollingFrame",ContentArea)
+local ContentScroll = Instance.new("ScrollingFrame",ContentArea)
 ContentScroll.Size=UDim2.new(1,0,1,0); ContentScroll.BackgroundTransparency=1
 ContentScroll.BorderSizePixel=0; ContentScroll.ScrollBarThickness=2
 ContentScroll.ScrollBarImageColor3=Color3.fromRGB(255,165,0)
@@ -477,22 +603,19 @@ end
 -- ===================================================
 -- PANEL 1: AUTO HATCH
 -- ===================================================
-local PanelHatch=makePanel()
+local PanelHatch = makePanel()
 
-local hatchLuckAktif=false; local hatchLuckLoop=nil
+local hatchLuckAktif = false; local hatchLuckLoop = nil
 
--- *** MODIFIKASI: saat Hatch ON → lepas WINS+SPEED+BEST, pasang LUCK ***
 local function startHatchLuck()
-    hatchLuckAktif=true
-    hatchLuckLoop=task.spawn(function()
+    hatchLuckAktif = true
+    hatchLuckLoop = task.spawn(function()
         while hatchLuckAktif do
             pcall(fireSouvenirLuck)
-            -- Lepas Pet WINS, SPEED, BEST secepat mungkin
             task.spawn(function()
                 lepasListPet(PET_WINS_IDS)
                 lepasListPet(PET_SPEED_IDS)
                 lepasListPet(PET_BEST_IDS)
-                -- Pasang Pet LUCK
                 pasangListPet(PET_LUCK_IDS)
             end)
             smartDelay(0.5)
@@ -500,17 +623,17 @@ local function startHatchLuck()
     end)
 end
 local function stopHatchLuck()
-    hatchLuckAktif=false
-    if hatchLuckLoop then task.cancel(hatchLuckLoop); hatchLuckLoop=nil end
+    hatchLuckAktif = false
+    if hatchLuckLoop then task.cancel(hatchLuckLoop); hatchLuckLoop = nil end
 end
 
-local htBar=makeStatusCard(PanelHatch,Color3.fromRGB(160,80,255),0)
-local HatchStatusLbl=htBar.statusLbl; local HatchRunLbl=htBar.runLbl
-local HatchToggleBtn=htBar.togBtn; local _htG=htBar.grad
+local htBar = makeStatusCard(PanelHatch,Color3.fromRGB(160,80,255),0)
+local HatchStatusLbl = htBar.statusLbl; local HatchRunLbl = htBar.runLbl
+local HatchToggleBtn = htBar.togBtn;   local _htG = htBar.grad
 
 makeSectionHeader(PanelHatch,"Pengaturan Hatch","🥚",1)
 
-local HatchCfg=Instance.new("Frame",PanelHatch)
+local HatchCfg = Instance.new("Frame",PanelHatch)
 HatchCfg.Size=UDim2.new(1,0,0,54); HatchCfg.BackgroundColor3=Color3.fromRGB(16,13,26)
 HatchCfg.BorderSizePixel=0; HatchCfg.ZIndex=103; HatchCfg.LayoutOrder=2
 Instance.new("UICorner",HatchCfg).CornerRadius=UDim.new(0,10)
@@ -592,17 +715,17 @@ local function runHatchLoop()
     setHatchOFF()
 end
 HatchToggleBtn.MouseButton1Click:Connect(function()
-    hatchAktif=not hatchAktif
+    hatchAktif = not hatchAktif
     if hatchAktif then setHatchON(); task.spawn(runHatchLoop) end
 end)
 
 -- ===================================================
--- PANEL 2: TROPHY
+-- PANEL 2: PUSH TROPHY (tanpa Auto Claim, Pet Trophy tetap)
 -- ===================================================
-local PanelPushTrophy=makePanel()
+local PanelPushTrophy = makePanel()
 
-local CFG={wins={value=12700,mode="above"},speed={value=12700,mode="below"}}
-local TROPHY_STATE={running=false,currentMode="IDLE",winsCount=0,loop=nil}
+local CFG = {wins={value=12700,mode="above"}, speed={value=12700,mode="below"}}
+local TROPHY_STATE = {running=false, currentMode="IDLE", winsCount=0, loop=nil}
 
 local function checkCondition(cfg,h) if cfg.mode=="above" then return h>cfg.value else return h<cfg.value end end
 local function getTrophyHeight()
@@ -611,44 +734,13 @@ local function getTrophyHeight()
     return 0
 end
 
--- AUTO CLAIM FREE GIFT — jeda 30 detik
-makeSectionHeader(PanelPushTrophy,"Auto Claim Free Gift","🎁",0)
-local ClaimCard=makeSimpleToggleCard(PanelPushTrophy,"🎁","Auto Claim Free Gift",Color3.fromRGB(80,220,130),1)
-local saClaimAktif=false; local saClaimThread=nil
-
-local function runClaimLoop()
-    while saClaimAktif do
-        for n=1,12 do
-            if not saClaimAktif then break end
-            pcall(function() RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("GetOnlineAward",n) end)
-            smartDelay(3)
-        end
-        if not saClaimAktif then break end
-        smartDelay(30)
-    end
-end
-local function setClaimON()
-    saClaimAktif=true; ClaimCard.togBtn.Text="ON"
-    ClaimCard.togBtn.BackgroundColor3=Color3.fromRGB(35,145,70); ClaimCard.togBtn.TextColor3=Color3.fromRGB(255,255,255)
-    ClaimCard.stroke.Transparency=0.2; ClaimCard.card.BackgroundColor3=Color3.fromRGB(12,22,16)
-    ClaimCard.strip.BackgroundTransparency=0.2; saClaimThread=task.spawn(runClaimLoop)
-end
-local function setClaimOFF()
-    saClaimAktif=false
-    if saClaimThread then task.cancel(saClaimThread); saClaimThread=nil end
-    ClaimCard.togBtn.Text="OFF"; ClaimCard.togBtn.BackgroundColor3=Color3.fromRGB(50,48,70)
-    ClaimCard.togBtn.TextColor3=Color3.fromRGB(140,136,170); ClaimCard.stroke.Transparency=0.7
-    ClaimCard.card.BackgroundColor3=Color3.fromRGB(16,14,26); ClaimCard.strip.BackgroundTransparency=0.7
-end
-ClaimCard.togBtn.MouseButton1Click:Connect(function() if saClaimAktif then setClaimOFF() else setClaimON() end end)
-
--- PUSH TROPHY
-makeSectionHeader(PanelPushTrophy,"Push Trophy","🏆",2)
+-- PUSH TROPHY HEADER
+makeSectionHeader(PanelPushTrophy,"Push Trophy","🏆",0)
 
 -- CARD GABUNGAN: Kiri=Ketinggian Studs | Kanan=Total Wins Push
 local ComboCard=Instance.new("Frame",PanelPushTrophy)
 ComboCard.Size=UDim2.new(1,0,0,52); ComboCard.BackgroundColor3=Color3.fromRGB(12,10,22)
-ComboCard.BorderSizePixel=0; ComboCard.ZIndex=103; ComboCard.LayoutOrder=3
+ComboCard.BorderSizePixel=0; ComboCard.ZIndex=103; ComboCard.LayoutOrder=1
 Instance.new("UICorner",ComboCard).CornerRadius=UDim.new(0,10)
 local comboS=Instance.new("UIStroke",ComboCard)
 comboS.Color=Color3.fromRGB(255,215,0); comboS.Thickness=1.3; comboS.Transparency=0.45
@@ -711,7 +803,7 @@ ResetBtn.Font=Enum.Font.GothamBold; ResetBtn.BorderSizePixel=0; ResetBtn.ZIndex=
 Instance.new("UICorner",ResetBtn).CornerRadius=UDim.new(0,5)
 ResetBtn.MouseButton1Click:Connect(function() TROPHY_STATE.winsCount=0; PushCountLbl.Text="0" end)
 
--- THRESHOLD CARD (compact 56px)
+-- THRESHOLD CARD
 local function makeThresholdCard(parent,icon,accentColor,label,cfgRef,layoutOrder)
     local card=Instance.new("Frame",parent)
     card.Size=UDim2.new(1,0,0,56); card.BackgroundColor3=Color3.fromRGB(11,9,20)
@@ -766,13 +858,13 @@ local function makeThresholdCard(parent,icon,accentColor,label,cfgRef,layoutOrde
     updateUI(); return card,cs
 end
 
-local WinsSettingCard,WinsCS   = makeThresholdCard(PanelPushTrophy,"🏆",Color3.fromRGB(255,215,0),  "Souvenir WINS", CFG.wins,  4)
-local SpeedSettingCard,SpeedCS = makeThresholdCard(PanelPushTrophy,"⚡", Color3.fromRGB(80,180,255), "Souvenir SPEED",CFG.speed, 5)
+local WinsSettingCard,WinsCS   = makeThresholdCard(PanelPushTrophy,"🏆",Color3.fromRGB(255,215,0),  "Souvenir WINS", CFG.wins,  2)
+local SpeedSettingCard,SpeedCS = makeThresholdCard(PanelPushTrophy,"⚡", Color3.fromRGB(80,180,255), "Souvenir SPEED",CFG.speed, 3)
 
 -- STATUS CARD TROPHY
 local StatCard=Instance.new("Frame",PanelPushTrophy)
 StatCard.Size=UDim2.new(1,0,0,52); StatCard.BackgroundColor3=Color3.fromRGB(12,10,22)
-StatCard.BorderSizePixel=0; StatCard.ZIndex=103; StatCard.LayoutOrder=6
+StatCard.BorderSizePixel=0; StatCard.ZIndex=103; StatCard.LayoutOrder=4
 Instance.new("UICorner",StatCard).CornerRadius=UDim.new(0,10)
 local scSt=Instance.new("UIStroke",StatCard); scSt.Color=Color3.fromRGB(255,215,0); scSt.Thickness=1.5; scSt.Transparency=0.55
 
@@ -802,12 +894,12 @@ Instance.new("UICorner",TrophyTogBtn).CornerRadius=UDim.new(0,8)
 local togGrad=Instance.new("UIGradient",TrophyTogBtn)
 togGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(60,210,115)),ColorSequenceKeypoint.new(1,Color3.fromRGB(30,140,65))}); togGrad.Rotation=90
 
--- *** PET TROPHY SECTION (1x klik, hanya aktif sekali) ***
-makeSectionHeader(PanelPushTrophy,"Pet Trophy","🐾",7)
+-- PET TROPHY SECTION (tetap di panel ini)
+makeSectionHeader(PanelPushTrophy,"Pet Trophy","🐾",5)
 
 local PetTrophyCard=Instance.new("Frame",PanelPushTrophy)
 PetTrophyCard.Size=UDim2.new(1,0,0,52); PetTrophyCard.BackgroundColor3=Color3.fromRGB(11,9,20)
-PetTrophyCard.BorderSizePixel=0; PetTrophyCard.ZIndex=103; PetTrophyCard.LayoutOrder=8
+PetTrophyCard.BorderSizePixel=0; PetTrophyCard.ZIndex=103; PetTrophyCard.LayoutOrder=6
 Instance.new("UICorner",PetTrophyCard).CornerRadius=UDim.new(0,10)
 local ptCS=Instance.new("UIStroke",PetTrophyCard); ptCS.Color=Color3.fromRGB(255,140,0); ptCS.Thickness=1.3; ptCS.Transparency=0.5
 
@@ -828,7 +920,6 @@ ptDescLbl.TextColor3=Color3.fromRGB(140,120,80); ptDescLbl.TextSize=7
 ptDescLbl.Font=Enum.Font.Gotham; ptDescLbl.TextXAlignment=Enum.TextXAlignment.Left
 ptDescLbl.TextWrapped=true; ptDescLbl.ZIndex=104
 
--- Tombol 1x klik Pet Trophy
 local PetTrophyBtn=Instance.new("TextButton",PetTrophyCard)
 PetTrophyBtn.Size=UDim2.new(0,84,0,30); PetTrophyBtn.Position=UDim2.new(1,-90,0.5,-15)
 PetTrophyBtn.BackgroundColor3=Color3.fromRGB(35,145,70); PetTrophyBtn.Text="▶ AKTIFKAN"
@@ -838,24 +929,19 @@ Instance.new("UICorner",PetTrophyBtn).CornerRadius=UDim.new(0,7)
 local ptGrad=Instance.new("UIGradient",PetTrophyBtn)
 ptGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(255,180,0)),ColorSequenceKeypoint.new(1,Color3.fromRGB(200,120,0))}); ptGrad.Rotation=90
 
--- State 1x klik: hanya bisa dipencet sekali, lalu disabled sampai selesai
 local petTrophyBusy=false
-
 PetTrophyBtn.MouseButton1Click:Connect(function()
-    if petTrophyBusy then return end  -- block jika sedang jalan
+    if petTrophyBusy then return end
     petTrophyBusy=true
     PetTrophyBtn.Text="⏳ BERJALAN..."
     PetTrophyBtn.BackgroundColor3=Color3.fromRGB(60,55,90)
     ptGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(80,75,120)),ColorSequenceKeypoint.new(1,Color3.fromRGB(50,45,80))})
     ptCS.Transparency=0.15
     task.spawn(function()
-        -- Lepas Pet WINS, LUCK, BEST secepat mungkin
         lepasListPet(PET_WINS_IDS)
         lepasListPet(PET_LUCK_IDS)
         lepasListPet(PET_BEST_IDS)
-        -- Pasang Pet SPEED secepat mungkin
         pasangListPet(PET_SPEED_IDS)
-        -- Selesai — reset tombol ke siap (bisa dipencet lagi)
         petTrophyBusy=false
         PetTrophyBtn.Text="✔ SELESAI"
         PetTrophyBtn.BackgroundColor3=Color3.fromRGB(35,100,55)
@@ -931,12 +1017,12 @@ TrophyTogBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ===================================================
--- PANEL 3: AUTO PET (tanpa info card & tanpa toast)
+-- PANEL 3: AUTO PET
 -- ===================================================
-local PanelAutoPet=makePanel()
+local PanelAutoPet = makePanel()
 
-local AUTO_PET_CFG={wins={value=12700,mode="above"},speed={value=12700,mode="below"}}
-local AUTO_PET_STATE={running=false,currentMode="IDLE",loop=nil}
+local AUTO_PET_CFG   = {wins={value=12700,mode="above"}, speed={value=12700,mode="below"}}
+local AUTO_PET_STATE = {running=false, currentMode="IDLE", loop=nil}
 
 makeSectionHeader(PanelAutoPet,"Monitor Ketinggian","📡",0)
 
@@ -977,7 +1063,6 @@ makeSectionHeader(PanelAutoPet,"Threshold Pet","⚙️",2)
 local PetWinsCard,PetWinsCS   = makeThresholdCard(PanelAutoPet,"🏆",Color3.fromRGB(255,215,0),  "Pet WINS",  AUTO_PET_CFG.wins,  3)
 local PetSpeedCard,PetSpeedCS = makeThresholdCard(PanelAutoPet,"⚡", Color3.fromRGB(80,180,255), "Pet SPEED", AUTO_PET_CFG.speed, 4)
 
--- STATUS CARD AUTO PET
 local PetStatCard=Instance.new("Frame",PanelAutoPet)
 PetStatCard.Size=UDim2.new(1,0,0,52); PetStatCard.BackgroundColor3=Color3.fromRGB(12,10,22)
 PetStatCard.BorderSizePixel=0; PetStatCard.ZIndex=103; PetStatCard.LayoutOrder=5
@@ -1010,7 +1095,6 @@ Instance.new("UICorner",PetTogBtn).CornerRadius=UDim.new(0,8)
 local petTogGrad=Instance.new("UIGradient",PetTogBtn)
 petTogGrad.Color=ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(60,200,210)),ColorSequenceKeypoint.new(1,Color3.fromRGB(30,120,160))}); petTogGrad.Rotation=90
 
--- AUTO PET LOGIC
 local function applyAutoPetMode(mode,h)
     if mode==AUTO_PET_STATE.currentMode then return end
     AUTO_PET_STATE.currentMode=mode
@@ -1070,27 +1154,162 @@ PetTogBtn.MouseButton1Click:Connect(function()
     if AUTO_PET_STATE.running then stopAutoPetLoop() else startAutoPetLoop() end
 end)
 
+-- ===================================================
+-- PANEL 4: AUTO CLAIM (panel tersendiri)
+-- ===================================================
+local PanelClaim = makePanel()
+
+makeSectionHeader(PanelClaim,"Auto Claim Free Gift","🎁",0)
+
+-- INFO CARD
+local ClaimInfoCard=Instance.new("Frame",PanelClaim)
+ClaimInfoCard.Size=UDim2.new(1,0,0,54); ClaimInfoCard.BackgroundColor3=Color3.fromRGB(11,14,22)
+ClaimInfoCard.BorderSizePixel=0; ClaimInfoCard.ZIndex=103; ClaimInfoCard.LayoutOrder=1
+Instance.new("UICorner",ClaimInfoCard).CornerRadius=UDim.new(0,10)
+local ciS=Instance.new("UIStroke",ClaimInfoCard); ciS.Color=Color3.fromRGB(80,220,130); ciS.Thickness=1.2; ciS.Transparency=0.5
+local ciStrip=Instance.new("Frame",ClaimInfoCard); ciStrip.Size=UDim2.new(0,3,0.7,0); ciStrip.Position=UDim2.new(0,0,0.15,0)
+ciStrip.BackgroundColor3=Color3.fromRGB(80,220,130); ciStrip.BorderSizePixel=0; Instance.new("UICorner",ciStrip).CornerRadius=UDim.new(1,0)
+local ciIco=Instance.new("TextLabel",ClaimInfoCard); ciIco.Size=UDim2.new(0,26,0,26); ciIco.Position=UDim2.new(0,10,0.5,-13)
+ciIco.BackgroundTransparency=1; ciIco.Text="🎁"; ciIco.TextSize=16; ciIco.Font=Enum.Font.GothamBold; ciIco.ZIndex=104
+local ciTitle=Instance.new("TextLabel",ClaimInfoCard); ciTitle.Size=UDim2.new(0.6,0,0,16); ciTitle.Position=UDim2.new(0,40,0,8)
+ciTitle.BackgroundTransparency=1; ciTitle.Text="Auto Claim Online Award"
+ciTitle.TextColor3=Color3.fromRGB(80,230,140); ciTitle.TextSize=10
+ciTitle.Font=Enum.Font.GothamBold; ciTitle.TextXAlignment=Enum.TextXAlignment.Left; ciTitle.ZIndex=104
+local ciDesc=Instance.new("TextLabel",ClaimInfoCard); ciDesc.Size=UDim2.new(0.65,0,0,12); ciDesc.Position=UDim2.new(0,40,0,27)
+ciDesc.BackgroundTransparency=1; ciDesc.Text="Klaim reward 1-12 tiap 3 detik\nlalu jeda 30 detik per putaran"
+ciDesc.TextColor3=Color3.fromRGB(100,160,120); ciDesc.TextSize=7
+ciDesc.Font=Enum.Font.Gotham; ciDesc.TextXAlignment=Enum.TextXAlignment.Left; ciDesc.TextWrapped=true; ciDesc.ZIndex=104
+
+-- TOGGLE CARD AUTO CLAIM
+local ClaimTogCard=makeSimpleToggleCard(PanelClaim,"🎁","Auto Claim Free Gift",Color3.fromRGB(80,220,130),2)
+local saClaimAktif=false; local saClaimThread=nil
+
+-- STATUS DETAIL CARD
+local ClaimStatCard=Instance.new("Frame",PanelClaim)
+ClaimStatCard.Size=UDim2.new(1,0,0,60); ClaimStatCard.BackgroundColor3=Color3.fromRGB(11,16,14)
+ClaimStatCard.BorderSizePixel=0; ClaimStatCard.ZIndex=103; ClaimStatCard.LayoutOrder=3
+Instance.new("UICorner",ClaimStatCard).CornerRadius=UDim.new(0,10)
+local cscS=Instance.new("UIStroke",ClaimStatCard); cscS.Color=Color3.fromRGB(60,180,100); cscS.Thickness=1.2; cscS.Transparency=0.6
+
+local ClaimStatusDot=Instance.new("TextLabel",ClaimStatCard)
+ClaimStatusDot.Size=UDim2.new(0.5,0,0,18); ClaimStatusDot.Position=UDim2.new(0,12,0,7)
+ClaimStatusDot.BackgroundTransparency=1; ClaimStatusDot.Text="● MATI"
+ClaimStatusDot.TextColor3=Color3.fromRGB(255,80,80); ClaimStatusDot.TextSize=11
+ClaimStatusDot.Font=Enum.Font.GothamBold; ClaimStatusDot.TextXAlignment=Enum.TextXAlignment.Left; ClaimStatusDot.ZIndex=104
+
+local ClaimRoundLbl=Instance.new("TextLabel",ClaimStatCard)
+ClaimRoundLbl.Size=UDim2.new(0.55,0,0,12); ClaimRoundLbl.Position=UDim2.new(0,12,0,27)
+ClaimRoundLbl.BackgroundTransparency=1; ClaimRoundLbl.Text="Putaran: 0"
+ClaimRoundLbl.TextColor3=Color3.fromRGB(80,170,110); ClaimRoundLbl.TextSize=8
+ClaimRoundLbl.Font=Enum.Font.Gotham; ClaimRoundLbl.TextXAlignment=Enum.TextXAlignment.Left; ClaimRoundLbl.ZIndex=104
+
+local ClaimDetailLbl=Instance.new("TextLabel",ClaimStatCard)
+ClaimDetailLbl.Size=UDim2.new(0.55,0,0,12); ClaimDetailLbl.Position=UDim2.new(0,12,0,40)
+ClaimDetailLbl.BackgroundTransparency=1; ClaimDetailLbl.Text="Menunggu..."
+ClaimDetailLbl.TextColor3=Color3.fromRGB(100,140,115); ClaimDetailLbl.TextSize=7
+ClaimDetailLbl.Font=Enum.Font.Gotham; ClaimDetailLbl.TextXAlignment=Enum.TextXAlignment.Left; ClaimDetailLbl.ZIndex=104
+
+-- Progress bar claim
+local clProgBg=Instance.new("Frame",ClaimStatCard)
+clProgBg.Size=UDim2.new(0,80,0,36); clProgBg.Position=UDim2.new(1,-88,0.5,-18)
+clProgBg.BackgroundColor3=Color3.fromRGB(14,20,16); clProgBg.BorderSizePixel=0; clProgBg.ZIndex=104
+Instance.new("UICorner",clProgBg).CornerRadius=UDim.new(0,8)
+local clProgS=Instance.new("UIStroke",clProgBg); clProgS.Color=Color3.fromRGB(60,180,100); clProgS.Thickness=1; clProgS.Transparency=0.6
+local clProgVal=Instance.new("TextLabel",clProgBg)
+clProgVal.Size=UDim2.new(1,0,0.5,0); clProgVal.Position=UDim2.new(0,0,0.1,0)
+clProgVal.BackgroundTransparency=1; clProgVal.Text="0/12"
+clProgVal.TextColor3=Color3.fromRGB(80,230,140); clProgVal.TextSize=14
+clProgVal.Font=Enum.Font.GothamBold; clProgVal.TextXAlignment=Enum.TextXAlignment.Center; clProgVal.ZIndex=105
+local clProgSub=Instance.new("TextLabel",clProgBg)
+clProgSub.Size=UDim2.new(1,0,0.35,0); clProgSub.Position=UDim2.new(0,0,0.62,0)
+clProgSub.BackgroundTransparency=1; clProgSub.Text="reward"
+clProgSub.TextColor3=Color3.fromRGB(60,140,80); clProgSub.TextSize=7
+clProgSub.Font=Enum.Font.Gotham; clProgSub.TextXAlignment=Enum.TextXAlignment.Center; clProgSub.ZIndex=105
+
+-- TOTAL CLAIM COUNTER
+local ClaimCntCard=Instance.new("Frame",PanelClaim)
+ClaimCntCard.Size=UDim2.new(1,0,0,30); ClaimCntCard.BackgroundColor3=Color3.fromRGB(12,18,14)
+ClaimCntCard.BorderSizePixel=0; ClaimCntCard.ZIndex=103; ClaimCntCard.LayoutOrder=4
+Instance.new("UICorner",ClaimCntCard).CornerRadius=UDim.new(0,8)
+local ClaimTotalLbl=Instance.new("TextLabel",ClaimCntCard)
+ClaimTotalLbl.Size=UDim2.new(1,-12,1,0); ClaimTotalLbl.Position=UDim2.new(0,10,0,0)
+ClaimTotalLbl.BackgroundTransparency=1; ClaimTotalLbl.Text="Total klaim sesi ini: 0"
+ClaimTotalLbl.TextColor3=Color3.fromRGB(80,220,130); ClaimTotalLbl.TextSize=9
+ClaimTotalLbl.Font=Enum.Font.GothamBold; ClaimTotalLbl.TextXAlignment=Enum.TextXAlignment.Left; ClaimTotalLbl.ZIndex=104
+
+local totalClaimCount=0; local claimRound=0
+
+local function runClaimLoop()
+    while saClaimAktif do
+        claimRound += 1
+        ClaimRoundLbl.Text = "Putaran: "..claimRound
+        for n=1,12 do
+            if not saClaimAktif then break end
+            clProgVal.Text = n.."/12"
+            ClaimDetailLbl.Text = "Klaim reward #"..n.."..."
+            pcall(function() RS:WaitForChild("Msg"):WaitForChild("RemoteEvent"):FireServer("GetOnlineAward",n) end)
+            totalClaimCount += 1
+            ClaimTotalLbl.Text = "Total klaim sesi ini: "..totalClaimCount
+            smartDelay(3)
+        end
+        if not saClaimAktif then break end
+        clProgVal.Text = "✓"
+        ClaimDetailLbl.Text = "Jeda 30 detik..."
+        smartDelay(30)
+    end
+end
+
+local function setClaimON()
+    saClaimAktif=true
+    ClaimTogCard.togBtn.Text="ON"
+    ClaimTogCard.togBtn.BackgroundColor3=Color3.fromRGB(35,145,70)
+    ClaimTogCard.togBtn.TextColor3=Color3.fromRGB(255,255,255)
+    ClaimTogCard.stroke.Transparency=0.2; ClaimTogCard.card.BackgroundColor3=Color3.fromRGB(12,22,16)
+    ClaimTogCard.strip.BackgroundTransparency=0.2
+    ClaimStatusDot.Text="● AKTIF"; ClaimStatusDot.TextColor3=Color3.fromRGB(80,255,130)
+    cscS.Transparency=0.2; clProgBg.BackgroundColor3=Color3.fromRGB(12,26,17)
+    saClaimThread = task.spawn(runClaimLoop)
+end
+
+local function setClaimOFF()
+    saClaimAktif=false
+    if saClaimThread then task.cancel(saClaimThread); saClaimThread=nil end
+    ClaimTogCard.togBtn.Text="OFF"
+    ClaimTogCard.togBtn.BackgroundColor3=Color3.fromRGB(50,48,70)
+    ClaimTogCard.togBtn.TextColor3=Color3.fromRGB(140,136,170)
+    ClaimTogCard.stroke.Transparency=0.7; ClaimTogCard.card.BackgroundColor3=Color3.fromRGB(16,14,26)
+    ClaimTogCard.strip.BackgroundTransparency=0.7
+    ClaimStatusDot.Text="● MATI"; ClaimStatusDot.TextColor3=Color3.fromRGB(255,80,80)
+    cscS.Transparency=0.6; ClaimDetailLbl.Text="Menunggu..."
+    clProgVal.Text="0/12"; clProgBg.BackgroundColor3=Color3.fromRGB(14,20,16)
+end
+
+ClaimTogCard.togBtn.MouseButton1Click:Connect(function()
+    if saClaimAktif then setClaimOFF() else setClaimON() end
+end)
+
 -- ================================================
--- TAB SWITCH
+-- TAB SWITCH — 4 TAB
 -- ================================================
-local allTabs   = {HtTab,PtTab,ApTab}
-local allPanels = {PanelHatch,PanelPushTrophy,PanelAutoPet}
+local allTabs   = {HtTab, PtTab, ApTab, ClTab}
+local allPanels = {PanelHatch, PanelPushTrophy, PanelAutoPet, PanelClaim}
 
 local function switchTab(idx)
     for i,tab in ipairs(allTabs) do
-        local active=(i==idx)
-        allPanels[i].Visible=active
-        tab.indicator.Visible=active
-        tab.frame.BackgroundColor3=active and Color3.fromRGB(24,20,40) or Color3.fromRGB(20,17,32)
-        tab.stroke.Transparency=active and 0.25 or 0.88
-        tab.nameLbl.TextColor3=active and tab.accent or Color3.fromRGB(110,106,144)
-        tab.icoLbl.TextColor3=active and Color3.fromRGB(255,255,255) or Color3.fromRGB(150,140,180)
+        local active = (i==idx)
+        allPanels[i].Visible = active
+        tab.indicator.Visible = active
+        tab.frame.BackgroundColor3 = active and Color3.fromRGB(24,20,40) or Color3.fromRGB(20,17,32)
+        tab.stroke.Transparency = active and 0.25 or 0.88
+        tab.nameLbl.TextColor3 = active and tab.accent or Color3.fromRGB(110,106,144)
+        tab.icoLbl.TextColor3 = active and Color3.fromRGB(255,255,255) or Color3.fromRGB(150,140,180)
     end
-    ContentScroll.CanvasPosition=Vector2.zero
+    ContentScroll.CanvasPosition = Vector2.zero
 end
 
 HtTab.btn.MouseButton1Click:Connect(function() switchTab(1) end)
 PtTab.btn.MouseButton1Click:Connect(function() switchTab(2) end)
 ApTab.btn.MouseButton1Click:Connect(function() switchTab(3) end)
+ClTab.btn.MouseButton1Click:Connect(function() switchTab(4) end)
 
 switchTab(1)
